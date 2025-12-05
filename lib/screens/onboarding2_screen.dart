@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sprint1_project/screens/onboarding3_screen.dart';
 
 class Onboard2 extends StatelessWidget {
   const Onboard2({super.key});
@@ -32,7 +33,12 @@ class Onboard2 extends StatelessWidget {
             const SizedBox(height: 40),
 
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const Onboard3()),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(248, 187, 208, 1),
                 padding: const EdgeInsets.symmetric(

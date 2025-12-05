@@ -32,9 +32,7 @@ class Onboard3 extends StatelessWidget {
             const SizedBox(height: 40),
 
             ElevatedButton(
-              onPressed: () {
-                // Move to home/dashboard page
-              },
+              onPressed: () {},
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromRGBO(248, 187, 208, 1),
                 padding: const EdgeInsets.symmetric(
