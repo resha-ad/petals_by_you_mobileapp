@@ -1,28 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sprint1_project/screens/onboarding1_screen.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _goToOnboarding(); //navigation to onboarding
-  }
-
-  void _goToOnboarding() {
-    Future.delayed(const Duration(seconds: 5), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const Onboard1()),
-      );
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +16,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Logo
             Image.asset('assets/images/logo.png', width: 150, height: 150),
             const SizedBox(height: 20),
             const Text(
@@ -51,10 +32,28 @@ class _SplashScreenState extends State<SplashScreen> {
               "Your custom bouquet experience",
               style: TextStyle(fontSize: 16, color: Colors.black),
             ),
-            const SizedBox(height: 30),
-            const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color.fromRGBO(248, 187, 208, 1),
+            const SizedBox(height: 40),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const Onboard1()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(248, 187, 208, 1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              icon: const Icon(Icons.arrow_forward_ios, color: Colors.white),
+              label: const Text(
+                "Continue",
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],
