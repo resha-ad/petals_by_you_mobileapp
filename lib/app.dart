@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sprint1_project/screens/onboarding1_screen.dart';
+import 'package:sprint1_project/screens/onboarding2_screen.dart';
 import 'package:sprint1_project/screens/splash_screen.dart';
 
 class App extends StatelessWidget {
@@ -7,6 +8,6 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Onboard1());
+    return MaterialApp(home: Onboard2());
   }
 }
