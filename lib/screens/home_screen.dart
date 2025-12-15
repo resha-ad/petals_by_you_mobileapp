@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sprint1_project/widgets/home_header.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -6,14 +7,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromRGBO(252, 228, 236, 1),
-      appBar: AppBar(title: const Text("Home"), centerTitle: true),
-      body: const Center(
-        child: Text(
-          "Welcome to Home Screen!",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        ),
-      ),
+      backgroundColor: Colors.white,
+      body: Column(children: const [HomeHeader()]),
     );
   }
 }
