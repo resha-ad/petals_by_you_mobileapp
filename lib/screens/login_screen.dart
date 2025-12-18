@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/screens/home_screen.dart';
+import 'package:sprint1_project/screens/bottom_screens/home_screen.dart';
+import 'package:sprint1_project/screens/dashboard_screen.dart';
 import 'package:sprint1_project/screens/signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -78,7 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (_formKey.currentState!.validate()) {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (_) => const HomeScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const DashboardScreen(),
+                          ),
                         );
                       }
                     },
