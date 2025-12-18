@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 
 class CategoryRow extends StatelessWidget {
   const CategoryRow({super.key});
-
   @override
   Widget build(BuildContext context) {
-    final categories = ["Romantic", "Wedding", "Birthday", "Graduation"];
-
+    final categories = [
+      "Wedding",
+      "Birthday",
+      "Graduation",
+      "Anniversary",
+      "Valentine",
+      "Engagement",
+    ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
