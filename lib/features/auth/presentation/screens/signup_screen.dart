@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/screens/bottom_screens/home_screen.dart';
-import 'package:sprint1_project/screens/dashboard_screen.dart';
-import 'package:sprint1_project/screens/signup_screen.dart';
+import '../../../dashboard/presentation/screens/dashboard_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -30,10 +31,25 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "Welcome Back",
+                    "Create Account",
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 30),
+
+                  // Name
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.person_outline),
+                      labelText: "Full Name",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? "Name is required" : null,
+                  ),
+                  const SizedBox(height: 20),
 
                   // Email
                   TextFormField(
@@ -64,7 +80,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (value) =>
                         value!.isEmpty ? "Password is required" : null,
                   ),
+                  const SizedBox(height: 30),
 
+                  // Confirm Password
+                  TextFormField(
+                    controller: confirmController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      labelText: "Confirm Password",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    validator: (value) =>
+                        value!.isEmpty ? "Confirm Password is required" : null,
+                  ),
                   const SizedBox(height: 30),
 
                   ElevatedButton(
@@ -85,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       }
                     },
-                    child: const Text("Login"),
+                    child: const Text("Sign Up"),
                   ),
 
                   const SizedBox(height: 20),
@@ -93,15 +124,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const SignupScreen(),
+                            builder: (_) => const LoginScreen(),
                           ),
                         );
                       },
                       child: const Text(
-                        "Don't have an account? Sign Up",
+                        "Already have an account? Login",
                         style: TextStyle(
                           decoration: TextDecoration.underline,
                           color: Colors.blue,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/widgets/category_row_widget.dart';
-import 'package:sprint1_project/widgets/home_header.dart';
-import 'package:sprint1_project/widgets/offer_card_widget.dart';
-import 'package:sprint1_project/widgets/product_card_widget.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/widgets/category_row_widget.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/widgets/home_header.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/widgets/offer_card_widget.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/widgets/product_card_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/screens/bottom_screens/customize_screen.dart';
-import 'package:sprint1_project/screens/bottom_screens/favorites_screen.dart';
-import 'package:sprint1_project/screens/bottom_screens/profile_screen.dart';
-import 'package:sprint1_project/screens/bottom_screens/search_screen.dart';
-import 'bottom_screens/home_screen.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/screens/customize_screen.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/screens/favorites_screen.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/screens/home_screen.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/screens/profile_screen.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/screens/search_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

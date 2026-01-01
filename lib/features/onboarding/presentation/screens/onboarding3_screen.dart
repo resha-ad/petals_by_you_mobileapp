@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/screens/onboarding3_screen.dart';
+import 'package:sprint1_project/features/auth/presentation/screens/login_screen.dart';
 
-class Onboard2 extends StatelessWidget {
-  const Onboard2({super.key});
+class Onboard3 extends StatelessWidget {
+  const Onboard3({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,16 +16,12 @@ class Onboard2 extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.collections_bookmark,
-                  size: 200,
-                  color: Colors.pinkAccent,
-                ),
+                Icon(Icons.local_florist, size: 200, color: Colors.pinkAccent),
 
                 const SizedBox(height: 30),
 
                 const Text(
-                  "Browse Curated Collections",
+                  "Easy Ordering & Delivery",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
@@ -33,7 +29,7 @@ class Onboard2 extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 const Text(
-                  "From birthdays to weddings — find beautiful premade designs.",
+                  "Simple checkout and reliable delivery for every special moment.",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.black87),
                 ),
@@ -44,7 +40,7 @@ class Onboard2 extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const Onboard3()),
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -57,7 +53,7 @@ class Onboard2 extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  child: const Text("Next"),
+                  child: const Text("Get Started"),
                 ),
               ],
             ),

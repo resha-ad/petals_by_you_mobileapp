@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/screens/onboarding2_screen.dart';
+import 'package:sprint1_project/features/onboarding/presentation/screens/onboarding2_screen.dart';
 
 class Onboard1 extends StatelessWidget {
   const Onboard1({super.key});
