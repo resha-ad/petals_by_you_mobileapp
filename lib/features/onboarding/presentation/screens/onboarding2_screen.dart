@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sprint1_project/screens/login_screen.dart';
+import 'package:sprint1_project/features/onboarding/presentation/screens/onboarding3_screen.dart';
 
-class Onboard3 extends StatelessWidget {
-  const Onboard3({super.key});
+class Onboard2 extends StatelessWidget {
+  const Onboard2({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,12 +16,16 @@ class Onboard3 extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.local_florist, size: 200, color: Colors.pinkAccent),
+                Icon(
+                  Icons.collections_bookmark,
+                  size: 200,
+                  color: Colors.pinkAccent,
+                ),
 
                 const SizedBox(height: 30),
 
                 const Text(
-                  "Easy Ordering & Delivery",
+                  "Browse Curated Collections",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
@@ -29,7 +33,7 @@ class Onboard3 extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 const Text(
-                  "Simple checkout and reliable delivery for every special moment.",
+                  "From birthdays to weddings — find beautiful premade designs.",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.black87),
                 ),
@@ -40,7 +44,7 @@ class Onboard3 extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      MaterialPageRoute(builder: (_) => const Onboard3()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -53,7 +57,7 @@ class Onboard3 extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  child: const Text("Get Started"),
+                  child: const Text("Next"),
                 ),
               ],
             ),
