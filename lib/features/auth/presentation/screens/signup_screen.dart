@@ -113,8 +113,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         : null,
                   ),
                   const SizedBox(height: 30),
-                  if (authState.status == AuthStatus.loading)
-                    const Center(child: CircularProgressIndicator()),
+
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
@@ -124,7 +123,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                     ),
                     onPressed: authState.status == AuthStatus.loading
-                        ? null
+                        ? null // Disable button while loading
                         : () async {
                             if (_formKey.currentState!.validate()) {
                               final datasource = ref.read(
@@ -149,8 +148,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   );
                             }
                           },
-                    child: const Text("Sign Up"),
+                    child: authState.status == AuthStatus.loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            "Sign Up",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
+
                   const SizedBox(height: 20),
                   Center(
                     child: GestureDetector(

@@ -76,8 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         value!.isEmpty ? "Password is required" : null,
                   ),
                   const SizedBox(height: 30),
-                  if (authState.status == AuthStatus.loading)
-                    const Center(child: CircularProgressIndicator()),
+
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
@@ -98,7 +97,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   );
                             }
                           },
-                    child: const Text("Login"),
+                    child: authState.status == AuthStatus.loading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Text(
+                            "Login",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 20),
                   Center(
