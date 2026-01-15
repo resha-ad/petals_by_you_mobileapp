@@ -24,6 +24,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authViewModelProvider);
     ref.listen(authViewModelProvider, (_, next) {
+      if (!mounted) return; // 
       if (next.status == AuthStatus.registered) {
         showSnackbar(
           context,
@@ -132,6 +133,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               if (await datasource.isEmailExists(
                                 emailController.text,
                               )) {
+                                if (!mounted) return; // ✅ Added mounted check
                                 showSnackbar(
                                   context,
                                   'Email already exists',
@@ -139,6 +141,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 );
                                 return;
                               }
+                              if (!mounted)
+                                return;
                               ref
                                   .read(authViewModelProvider.notifier)
                                   .register(
