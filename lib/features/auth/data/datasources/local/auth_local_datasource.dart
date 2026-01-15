@@ -8,7 +8,7 @@ final authLocalDatasourceProvider = Provider<AuthLocalDatasource>((ref) {
   return AuthLocalDatasource(hiveService: hiveService);
 });
 
-class AuthLocalDatasource implements IAuthDataSource {
+class AuthLocalDatasource implements IAuthLocalDataSource {
   final HiveService _hiveService;
 
   AuthLocalDatasource({required HiveService hiveService})
@@ -43,12 +43,12 @@ class AuthLocalDatasource implements IAuthDataSource {
   }
 
   @override
-  Future<bool> register(AuthHiveModel user) async {
+  Future<AuthHiveModel> register(AuthHiveModel user) async {
     try {
       await _hiveService.registerUser(user);
-      return true;
+      return user; // ← Return the saved model (required by interface)
     } catch (e) {
-      return false;
+      rethrow; // Let repository handle failure
     }
   }
 
