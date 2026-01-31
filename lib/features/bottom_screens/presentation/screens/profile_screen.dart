@@ -120,12 +120,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final authNotifier = ref.read(authViewModelProvider.notifier);
     final user = ref.read(authViewModelProvider).user;
 
+    //Needs to fix here
     if (user == null || user.authId == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("No user logged in")));
+      // print("No user logged in");
       return;
     }
+    //FIXXX HERE
 
     setState(() => _isLoading = true);
 
@@ -198,12 +201,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   ImageProvider _getProfileImage(AuthEntity? user) {
     if (_profileImage != null) return FileImage(_profileImage!);
-    if (user?.profilePicture != null &&
-        user!.profilePicture != 'default-profile.png') {
+
+    final profilePic = user?.profilePicture;
+    if (profilePic != null && profilePic != 'default-profile.png') {
       return NetworkImage(
-        '${ApiEndpoints.baseUrl}/uploads/profile_pictures/${user.profilePicture}',
+        '${ApiEndpoints.baseUrl}/uploads/profile_pictures/$profilePic',
       );
     }
+
     return const AssetImage('assets/images/default-profile.png');
   }
 
