@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,12 +40,9 @@ class AuthRepository implements IAuthRepository {
 
     if (await _networkInfo.isConnected) {
       try {
-        await _remoteDatasource.register(apiModel);
-
-        // Cache in Hive
-        final hiveModel = AuthHiveModel.fromEntity(entity);
+        final registeredApi = await _remoteDatasource.register(apiModel);
+        final hiveModel = AuthHiveModel.fromApiModel(registeredApi);
         await _localDatasource.register(hiveModel);
-
         return const Right(true);
       } on DioException catch (e) {
         return Left(
@@ -56,14 +55,12 @@ class AuthRepository implements IAuthRepository {
         return Left(ApiFailure(message: e.toString()));
       }
     } else {
-      // Offline registration
       final exists = await _localDatasource.isEmailExists(entity.email);
       if (exists) {
         return const Left(
           LocalDatabaseFailure(message: "Email already exists"),
         );
       }
-
       final hiveModel = AuthHiveModel.fromEntity(entity);
       await _localDatasource.register(hiveModel);
       return const Right(true);
@@ -80,11 +77,8 @@ class AuthRepository implements IAuthRepository {
         final apiUser = await _remoteDatasource.login(email, password);
         if (apiUser != null) {
           final entity = apiUser.toEntity();
-
-          // Cache/update Hive
-          final hiveModel = AuthHiveModel.fromEntity(entity);
+          final hiveModel = AuthHiveModel.fromApiModel(apiUser);
           await _localDatasource.register(hiveModel);
-
           return Right(entity);
         }
         return const Left(ApiFailure(message: "Invalid email or password"));
@@ -99,7 +93,6 @@ class AuthRepository implements IAuthRepository {
         return Left(ApiFailure(message: e.toString()));
       }
     } else {
-      // Offline login (from cache)
       final model = await _localDatasource.login(email, password);
       if (model != null) {
         return Right(model.toEntity());
@@ -128,6 +121,55 @@ class AuthRepository implements IAuthRepository {
       return const Right(true);
     } catch (e) {
       return Left(LocalDatabaseFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> uploadProfilePicture(File image) async {
+    if (!await _networkInfo.isConnected) {
+      return const Left(ApiFailure(message: 'No internet connection'));
+    }
+    try {
+      final filename = await _remoteDatasource.uploadProfilePicture(image);
+      return Right(filename);
+    } on DioException catch (e) {
+      return Left(
+        ApiFailure(
+          message: e.response?.data['message'] ?? 'Upload failed',
+          statusCode: e.response?.statusCode,
+        ),
+      );
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AuthEntity>> updateUser(
+    String id,
+    Map<String, dynamic> data,
+    File? image,
+  ) async {
+    if (!await _networkInfo.isConnected) {
+      return Left(ApiFailure(message: 'No internet connection'));
+    }
+    try {
+      // Always pass null for image (since we use separate upload)
+      final updatedApi = await _remoteDatasource.updateUser(id, data, null);
+
+      final hiveModel = AuthHiveModel.fromApiModel(updatedApi);
+      await _localDatasource.register(hiveModel);
+
+      return Right(updatedApi.toEntity());
+    } on DioException catch (e) {
+      return Left(
+        ApiFailure(
+          message: e.response?.data['message'] ?? 'Update failed',
+          statusCode: e.response?.statusCode,
+        ),
+      );
+    } catch (e) {
+      return Left(ApiFailure(message: e.toString()));
     }
   }
 }
