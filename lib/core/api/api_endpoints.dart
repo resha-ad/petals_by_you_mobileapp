@@ -36,4 +36,6 @@ class ApiEndpoints {
   static const String users = '/users';
   static const String userLogin = '/users/login';
   static String userById(String id) => '/users/$id';
+  static const String userUploadProfilePicture =
+      '/users/upload-profile-picture';
 }
