@@ -6,7 +6,6 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
 import 'package:sprint1_project/core/services/storage/secure_storage_service.dart';
 
-// Provider
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient(ref));
 
 class ApiClient {
@@ -37,12 +36,11 @@ class ApiClient {
           Duration(seconds: 2),
           Duration(seconds: 3),
         ],
-        retryEvaluator: (error, attempt) {
-          return error.type == DioExceptionType.connectionTimeout ||
-              error.type == DioExceptionType.sendTimeout ||
-              error.type == DioExceptionType.receiveTimeout ||
-              error.type == DioExceptionType.connectionError;
-        },
+        retryEvaluator: (error, attempt) =>
+            error.type == DioExceptionType.connectionTimeout ||
+            error.type == DioExceptionType.sendTimeout ||
+            error.type == DioExceptionType.receiveTimeout ||
+            error.type == DioExceptionType.connectionError,
       ),
     );
 
@@ -63,7 +61,6 @@ class ApiClient {
   Dio get dio => _dio;
 }
 
-// Auth Interceptor - adds token to protected requests
 class _AuthInterceptor extends Interceptor {
   final Ref ref;
 
@@ -74,12 +71,17 @@ class _AuthInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Skip auth for login/register
-    final isAuthEndpoint =
-        options.path == ApiEndpoints.userLogin ||
-        options.path == ApiEndpoints.users;
+    // Skip token injection for public auth endpoints
+    final publicPaths = [
+      ApiEndpoints.register,
+      ApiEndpoints.login,
+      ApiEndpoints.forgotPassword,
+      ApiEndpoints.resetPassword,
+    ];
 
-    if (!isAuthEndpoint) {
+    final isPublic = publicPaths.any((p) => options.path == p);
+
+    if (!isPublic) {
       final token = await ref.read(secureStorageProvider).getToken();
       if (token != null) {
         options.headers['Authorization'] = 'Bearer $token';
@@ -92,9 +94,7 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (err.response?.statusCode == 401) {
-      // Token expired/invalid → clear it
       ref.read(secureStorageProvider).deleteToken();
-      // You can add global logout/navigation here later
     }
     handler.next(err);
   }
