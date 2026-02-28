@@ -3,6 +3,7 @@ import 'package:sprint1_project/core/constants/hive_table_constants.dart';
 import 'package:sprint1_project/features/auth/data/models/auth_api_model.dart';
 import 'package:sprint1_project/features/auth/domain/entities/auth_entity.dart';
 import 'package:uuid/uuid.dart';
+
 part 'auth_hive_model.g.dart';
 
 @HiveType(typeId: HiveTableConstant.authTypeId)
@@ -11,88 +12,72 @@ class AuthHiveModel extends HiveObject {
   final String? authId;
 
   @HiveField(1)
-  final String fullName;
+  final String firstName;
 
   @HiveField(2)
-  final String email;
+  final String lastName;
 
   @HiveField(3)
-  final String? username;
+  final String email;
 
   @HiveField(4)
-  final String? password;
+  final String username;
 
   @HiveField(5)
-  final String? phoneNumber;
+  final String? password;
 
   @HiveField(6)
-  final String? profilePicture;
+  final String? phone;
 
-  // Future profile fields
   @HiveField(7)
-  final String? address;
+  final String? imageUrl;
 
   @HiveField(8)
-  final String? dateOfBirth;
-
-  @HiveField(9)
-  final String? preferredDeliveryTime;
+  final String role;
 
   AuthHiveModel({
     String? authId,
-    required this.fullName,
+    required this.firstName,
+    required this.lastName,
     required this.email,
     required this.username,
     this.password,
-    this.phoneNumber,
-    this.profilePicture,
-    this.address,
-    this.dateOfBirth,
-    this.preferredDeliveryTime,
+    this.phone,
+    this.imageUrl,
+    this.role = 'user',
   }) : authId = authId ?? const Uuid().v4();
 
-  AuthEntity toEntity() {
-    return AuthEntity(
-      authId: authId,
-      fullName: fullName,
-      email: email,
-      username: username,
-      phoneNumber: phoneNumber,
-      profilePicture: profilePicture,
-      address: address,
-      dateOfBirth: dateOfBirth,
-      preferredDeliveryTime: preferredDeliveryTime,
-    );
-  }
+  AuthEntity toEntity() => AuthEntity(
+    authId: authId,
+    firstName: firstName,
+    lastName: lastName,
+    email: email,
+    username: username,
+    phone: phone,
+    imageUrl: imageUrl,
+    role: role,
+  );
 
-  factory AuthHiveModel.fromEntity(AuthEntity entity) {
-    return AuthHiveModel(
-      authId: entity.authId,
-      fullName: entity.fullName,
-      email: entity.email,
-      username: entity.username,
-      password: entity.password,
-      phoneNumber: entity.phoneNumber,
-      profilePicture: entity.profilePicture,
-      address: entity.address,
-      dateOfBirth: entity.dateOfBirth,
-      preferredDeliveryTime: entity.preferredDeliveryTime,
-    );
-  }
+  factory AuthHiveModel.fromEntity(AuthEntity entity) => AuthHiveModel(
+    authId: entity.authId,
+    firstName: entity.firstName,
+    lastName: entity.lastName,
+    email: entity.email,
+    username: entity.username,
+    password: entity.password,
+    phone: entity.phone,
+    imageUrl: entity.imageUrl,
+    role: entity.role,
+  );
 
-  // factory to convert from API model ───────────────────────
-  factory AuthHiveModel.fromApiModel(AuthApiModel apiModel) {
-    return AuthHiveModel(
-      authId: apiModel.id,
-      fullName: apiModel.fullName,
-      email: apiModel.email,
-      username: apiModel.username,
-      password: apiModel.password, // usually null from API after login/register
-      phoneNumber: apiModel.phoneNumber,
-      profilePicture: apiModel.profilePicture,
-      address: apiModel.address,
-      dateOfBirth: apiModel.dateOfBirth,
-      preferredDeliveryTime: apiModel.preferredDeliveryTime,
-    );
-  }
+  factory AuthHiveModel.fromApiModel(AuthApiModel apiModel) => AuthHiveModel(
+    authId: apiModel.id,
+    firstName: apiModel.firstName,
+    lastName: apiModel.lastName,
+    email: apiModel.email,
+    username: apiModel.username,
+    phone: apiModel.phone,
+    imageUrl: apiModel.imageUrl,
+    role: apiModel.role,
+  );
 }
