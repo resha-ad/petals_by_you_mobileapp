@@ -9,23 +9,28 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return RefreshIndicator(
+      onRefresh: () async {
+        // You can add real refresh logic here later (e.g. reload products)
+        await Future.delayed(const Duration(seconds: 1));
+      },
       child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 20),
+        physics:
+            const AlwaysScrollableScrollPhysics(), // ← This is the most important line
+        padding: const EdgeInsets.only(
+          bottom: 100,
+        ), // ← Extra space so last item isn't hidden under BottomNav
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             HomeHeader(),
             SizedBox(height: 20),
-
             CategoryRow(),
             SizedBox(height: 20),
-
-            /// Offer card
             OfferCard(),
             SizedBox(height: 20),
 
-            /// New Arrival
+            // New Arrival
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -44,9 +49,10 @@ class HomeScreen extends StatelessWidget {
               price: "Rs. 1500",
               imagePath: "assets/images/derbyBouquet.jpg",
             ),
+
             SizedBox(height: 24),
 
-            /// Our product
+            // Our product
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -65,6 +71,8 @@ class HomeScreen extends StatelessWidget {
               price: "Rs. 1200",
               imagePath: "assets/images/tulips.jpg",
             ),
+
+            SizedBox(height: 40), // Extra bottom padding
           ],
         ),
       ),

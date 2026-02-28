@@ -3,9 +3,8 @@ import 'package:sprint1_project/core/services/hive/hive_service.dart';
 import 'package:sprint1_project/features/auth/data/datasources/auth_datasource.dart';
 import 'package:sprint1_project/features/auth/data/models/auth_hive_model.dart';
 
-final authLocalDatasourceProvider = Provider<AuthLocalDatasource>((ref) {
-  final hiveService = ref.watch(hiveServiceProvider);
-  return AuthLocalDatasource(hiveService: hiveService);
+final authLocalDatasourceProvider = Provider<IAuthLocalDataSource>((ref) {
+  return AuthLocalDatasource(hiveService: ref.watch(hiveServiceProvider));
 });
 
 class AuthLocalDatasource implements IAuthLocalDataSource {
@@ -15,40 +14,27 @@ class AuthLocalDatasource implements IAuthLocalDataSource {
     : _hiveService = hiveService;
 
   @override
-  Future<AuthHiveModel?> getCurrentUser() async {
+  Future<AuthHiveModel> saveUser(AuthHiveModel user) async {
+    await _hiveService.saveUser(user);
+    return user;
+  }
+
+  @override
+  Future<AuthHiveModel?> getCachedUser() async {
     try {
-      return _hiveService.getCurrentUser();
-    } catch (e) {
+      return _hiveService.getCachedUser();
+    } catch (_) {
       return null;
     }
   }
 
   @override
-  Future<AuthHiveModel?> login(String email, String password) async {
+  Future<bool> clearUser() async {
     try {
-      return await _hiveService.loginUser(email, password);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  @override
-  Future<bool> logout() async {
-    try {
-      await _hiveService.logoutUser();
+      await _hiveService.clearUser();
       return true;
-    } catch (e) {
+    } catch (_) {
       return false;
-    }
-  }
-
-  @override
-  Future<AuthHiveModel> register(AuthHiveModel user) async {
-    try {
-      await _hiveService.registerUser(user);
-      return user; // ← Return the saved model (required by interface)
-    } catch (e) {
-      rethrow; // Let repository handle failure
     }
   }
 
@@ -56,7 +42,7 @@ class AuthLocalDatasource implements IAuthLocalDataSource {
   Future<bool> isEmailExists(String email) async {
     try {
       return _hiveService.isEmailExists(email);
-    } catch (e) {
+    } catch (_) {
       return false;
     }
   }

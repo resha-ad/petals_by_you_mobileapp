@@ -1,85 +1,81 @@
 import 'package:sprint1_project/features/auth/domain/entities/auth_entity.dart';
 
+///   POST /api/auth/register  → response.data.data
+///   POST /api/auth/login     → response.data.data
+///   GET  /api/auth/whoami    → response.data.data
+///   PUT  /api/auth/profile   → response.data.data
 class AuthApiModel {
   final String? id;
-  final String fullName;
+  final String firstName;
+  final String lastName;
   final String email;
-  final String? username;
-  final String? password; // only sent during register
-  final String? phoneNumber;
-  final String? profilePicture;
-  final String? address;
-  final String? dateOfBirth;
-  final String? preferredDeliveryTime;
+  final String username;
+  final String? phone;
+  final String? imageUrl;
+  final String role;
+
+  // Only used when sending to register endpoint
+  final String? password;
+  final String? confirmPassword;
 
   AuthApiModel({
     this.id,
-    required this.fullName,
+    required this.firstName,
+    required this.lastName,
     required this.email,
-    this.username,
+    required this.username,
+    this.phone,
+    this.imageUrl,
+    this.role = 'user',
     this.password,
-    this.phoneNumber,
-    this.profilePicture,
-    this.address,
-    this.dateOfBirth,
-    this.preferredDeliveryTime,
+    this.confirmPassword,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'fullName': fullName,
-      'email': email,
-      'username': username,
-      'password': password,
-      'phoneNumber': phoneNumber,
-      'profilePicture': profilePicture,
-      'address': address,
-      'dateOfBirth': dateOfBirth,
-      'preferredDeliveryTime': preferredDeliveryTime,
-    };
-  }
+  /// Serialise for POST /api/auth/register
+  Map<String, dynamic> toRegisterJson() => {
+    'firstName': firstName,
+    'lastName': lastName,
+    'username': username,
+    'email': email,
+    'password': password,
+    'confirmPassword': confirmPassword,
+    if (phone != null && phone!.isNotEmpty) 'phone': phone,
+  };
 
+  /// Deserialise from backend response
   factory AuthApiModel.fromJson(Map<String, dynamic> json) {
     return AuthApiModel(
       id: json['_id']?.toString(),
-      fullName: (json['fullName'] ?? '') as String,
-      email: (json['email'] ?? '') as String,
-      username: json['username']?.toString(),
-      phoneNumber: json['phoneNumber']?.toString(),
-      profilePicture:
-          json['profilePicture']?.toString() ?? 'default-profile.png',
-      address: json['address']?.toString(),
-      dateOfBirth: json['dateOfBirth']?.toString(),
-      preferredDeliveryTime: json['preferredDeliveryTime']?.toString(),
+      firstName: (json['firstName'] ?? '').toString(),
+      lastName: (json['lastName'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      username: (json['username'] ?? '').toString(),
+      phone: json['phone']?.toString(),
+      imageUrl: json['imageUrl']?.toString(),
+      role: (json['role'] ?? 'user').toString(),
     );
   }
 
-  AuthEntity toEntity() {
-    return AuthEntity(
-      authId: id,
-      fullName: fullName,
-      email: email,
-      username: username,
-      phoneNumber: phoneNumber,
-      profilePicture: profilePicture,
-      address: address,
-      dateOfBirth: dateOfBirth,
-      preferredDeliveryTime: preferredDeliveryTime,
-    );
-  }
+  AuthEntity toEntity() => AuthEntity(
+    authId: id,
+    firstName: firstName,
+    lastName: lastName,
+    email: email,
+    username: username,
+    phone: phone,
+    imageUrl: imageUrl,
+    role: role,
+  );
 
-  factory AuthApiModel.fromEntity(AuthEntity entity) {
-    return AuthApiModel(
-      id: entity.authId,
-      fullName: entity.fullName,
-      email: entity.email,
-      username: entity.username,
-      password: entity.password,
-      phoneNumber: entity.phoneNumber,
-      profilePicture: entity.profilePicture,
-      address: entity.address,
-      dateOfBirth: entity.dateOfBirth,
-      preferredDeliveryTime: entity.preferredDeliveryTime,
-    );
-  }
+  factory AuthApiModel.fromEntity(AuthEntity entity) => AuthApiModel(
+    id: entity.authId,
+    firstName: entity.firstName,
+    lastName: entity.lastName,
+    email: entity.email,
+    username: entity.username,
+    phone: entity.phone,
+    imageUrl: entity.imageUrl,
+    role: entity.role,
+    password: entity.password,
+  );
 }

@@ -9,64 +9,44 @@ final hiveServiceProvider = Provider<HiveService>((ref) => HiveService());
 class HiveService {
   Future<void> init() async {
     final directory = await getApplicationDocumentsDirectory();
-    final path = '${directory.path}/${HiveTableConstant.dbName}';
-    Hive.init(path);
-    _registerAdapter();
-    await openBoxes();
+    Hive.init('${directory.path}/${HiveTableConstant.dbName}');
+    _registerAdapters();
+    await _openBoxes();
   }
 
-  void _registerAdapter() {
+  void _registerAdapters() {
     if (!Hive.isAdapterRegistered(HiveTableConstant.authTypeId)) {
       Hive.registerAdapter(AuthHiveModelAdapter());
     }
   }
 
-  Future<void> openBoxes() async {
+  Future<void> _openBoxes() async {
     await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
-    await Hive.openBox(
-      HiveTableConstant.appSettingsTable,
-    ); // For current_auth_id
+    await Hive.openBox(HiveTableConstant.appSettingsTable);
   }
 
-  Future<void> close() async {
-    await Hive.close();
-  }
+  Future<void> close() async => await Hive.close();
 
   Box<AuthHiveModel> get _authBox =>
       Hive.box<AuthHiveModel>(HiveTableConstant.authTable);
-  Box get _appBox => Hive.box(HiveTableConstant.appSettingsTable);
 
-  Future<AuthHiveModel> registerUser(AuthHiveModel model) async {
-    await _authBox.put(model.authId, model);
-    return model;
+  // ─── Cache the logged-in user ─────────────────────────────────────────────
+  // We store only one user under a fixed key for simplicity.
+  static const String _currentUserKey = 'current_user';
+
+  Future<void> saveUser(AuthHiveModel model) async {
+    await _authBox.put(_currentUserKey, model);
   }
 
-  Future<AuthHiveModel?> loginUser(String email, String password) async {
-    final users = _authBox.values.where(
-      (user) => user.email == email && user.password == password,
-    );
-    if (users.isNotEmpty) {
-      final user = users.first;
-      await _appBox.put('current_auth_id', user.authId); // Set current user
-      return user;
-    }
-    return null;
+  AuthHiveModel? getCachedUser() {
+    return _authBox.get(_currentUserKey);
   }
 
-  Future<void> logoutUser() async {
-    await _appBox.delete('current_auth_id');
-  }
-
-  AuthHiveModel? getCurrentUser() {
-    final currentId = _appBox.get('current_auth_id') as String?;
-    if (currentId != null) {
-      return _authBox.get(currentId);
-    }
-    return null;
+  Future<void> clearUser() async {
+    await _authBox.delete(_currentUserKey);
   }
 
   bool isEmailExists(String email) {
-    final users = _authBox.values.where((user) => user.email == email);
-    return users.isNotEmpty;
+    return _authBox.values.any((u) => u.email == email);
   }
 }
