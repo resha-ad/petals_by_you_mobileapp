@@ -4,6 +4,8 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/error/failures.dart';
+import 'package:sprint1_project/core/services/connectivity/network_info.dart';
+import 'package:sprint1_project/core/services/storage/secure_storage_service.dart';
 import 'package:sprint1_project/features/auth/data/datasources/auth_datasource.dart';
 import 'package:sprint1_project/features/auth/data/datasources/local/auth_local_datasource.dart';
 import 'package:sprint1_project/features/auth/data/datasources/remote/auth_remote_datasource.dart';
@@ -11,62 +13,58 @@ import 'package:sprint1_project/features/auth/data/models/auth_api_model.dart';
 import 'package:sprint1_project/features/auth/data/models/auth_hive_model.dart';
 import 'package:sprint1_project/features/auth/domain/entities/auth_entity.dart';
 import 'package:sprint1_project/features/auth/domain/repositories/auth_repository.dart';
-import 'package:sprint1_project/core/services/connectivity/network_info.dart';
 
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return AuthRepository(
     localDatasource: ref.read(authLocalDatasourceProvider),
     remoteDatasource: ref.read(authRemoteDatasourceProvider),
     networkInfo: ref.read(networkInfoProvider),
+    secureStorage: ref.read(secureStorageProvider),
   );
 });
 
 class AuthRepository implements IAuthRepository {
-  final IAuthLocalDataSource _localDatasource;
-  final IAuthRemoteDataSource _remoteDatasource;
+  final IAuthLocalDataSource _local;
+  final IAuthRemoteDataSource _remote;
   final NetworkInfo _networkInfo;
+  final SecureStorageService _secureStorage;
 
   AuthRepository({
     required IAuthLocalDataSource localDatasource,
     required IAuthRemoteDataSource remoteDatasource,
     required NetworkInfo networkInfo,
-  }) : _localDatasource = localDatasource,
-       _remoteDatasource = remoteDatasource,
-       _networkInfo = networkInfo;
+    required SecureStorageService secureStorage,
+  }) : _local = localDatasource,
+       _remote = remoteDatasource,
+       _networkInfo = networkInfo,
+       _secureStorage = secureStorage;
 
+  // ─── Register ──────────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, bool>> register(AuthEntity entity) async {
-    final apiModel = AuthApiModel.fromEntity(entity);
-
-    if (await _networkInfo.isConnected) {
-      try {
-        final registeredApi = await _remoteDatasource.register(apiModel);
-        final hiveModel = AuthHiveModel.fromApiModel(registeredApi);
-        await _localDatasource.register(hiveModel);
-        return const Right(true);
-      } on DioException catch (e) {
-        return Left(
-          ApiFailure(
-            message: e.response?.data['message'] ?? 'Registration failed',
-            statusCode: e.response?.statusCode,
-          ),
-        );
-      } catch (e) {
-        return Left(ApiFailure(message: e.toString()));
-      }
-    } else {
-      final exists = await _localDatasource.isEmailExists(entity.email);
-      if (exists) {
-        return const Left(
-          LocalDatabaseFailure(message: "Email already exists"),
-        );
-      }
-      final hiveModel = AuthHiveModel.fromEntity(entity);
-      await _localDatasource.register(hiveModel);
+    if (!await _networkInfo.isConnected) {
+      return const Left(ApiFailure(message: 'No internet connection'));
+    }
+    try {
+      final apiModel = AuthApiModel.fromEntity(entity);
+      await _remote.register(apiModel, entity.password ?? '');
+      // Registration succeeds — user must login separately (no token on register)
       return const Right(true);
+    } on DioException catch (e) {
+      return Left(
+        ApiFailure(
+          message: e.response?.data['message'] ?? 'Registration failed',
+          statusCode: e.response?.statusCode,
+        ),
+      );
+    } catch (e) {
+      return Left(
+        ApiFailure(message: e.toString().replaceAll('Exception: ', '')),
+      );
     }
   }
 
+  // ─── Login ─────────────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, AuthEntity>> login(
     String email,
@@ -74,14 +72,11 @@ class AuthRepository implements IAuthRepository {
   ) async {
     if (await _networkInfo.isConnected) {
       try {
-        final apiUser = await _remoteDatasource.login(email, password);
-        if (apiUser != null) {
-          final entity = apiUser.toEntity();
-          final hiveModel = AuthHiveModel.fromApiModel(apiUser);
-          await _localDatasource.register(hiveModel);
-          return Right(entity);
-        }
-        return const Left(ApiFailure(message: "Invalid email or password"));
+        final apiUser = await _remote.login(email, password);
+        // Cache user locally after successful login
+        final hiveModel = AuthHiveModel.fromApiModel(apiUser);
+        await _local.saveUser(hiveModel);
+        return Right(apiUser.toEntity());
       } on DioException catch (e) {
         return Left(
           ApiFailure(
@@ -90,77 +85,94 @@ class AuthRepository implements IAuthRepository {
           ),
         );
       } catch (e) {
-        return Left(ApiFailure(message: e.toString()));
+        return Left(
+          ApiFailure(message: e.toString().replaceAll('Exception: ', '')),
+        );
       }
     } else {
-      final model = await _localDatasource.login(email, password);
-      if (model != null) {
-        return Right(model.toEntity());
+      // Offline: try local cache
+      final cached = await _local.getCachedUser();
+      if (cached != null && cached.email == email) {
+        return Right(cached.toEntity());
       }
-      return const Left(LocalDatabaseFailure(message: "Invalid credentials"));
+      return const Left(
+        LocalDatabaseFailure(message: 'No internet connection'),
+      );
     }
   }
 
+  // ─── Get current user ──────────────────────────────────────────────────────
+  // Tries remote first (to get fresh data), falls back to local cache
   @override
   Future<Either<Failure, AuthEntity>> getCurrentUser() async {
-    try {
-      final model = await _localDatasource.getCurrentUser();
-      if (model != null) {
-        return Right(model.toEntity());
+    final token = await _secureStorage.getToken();
+    if (token == null) {
+      return const Left(ApiFailure(message: 'Not authenticated'));
+    }
+
+    if (await _networkInfo.isConnected) {
+      try {
+        final apiUser = await _remote.whoAmI();
+        final hiveModel = AuthHiveModel.fromApiModel(apiUser);
+        await _local.saveUser(hiveModel);
+        return Right(apiUser.toEntity());
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          await _secureStorage.deleteToken();
+          return const Left(
+            ApiFailure(message: 'Session expired. Please login again.'),
+          );
+        }
+        // Fall back to cache on other network errors
+        final cached = await _local.getCachedUser();
+        if (cached != null) return Right(cached.toEntity());
+        return Left(
+          ApiFailure(
+            message: e.response?.data['message'] ?? 'Failed to fetch user',
+          ),
+        );
+      } catch (e) {
+        final cached = await _local.getCachedUser();
+        if (cached != null) return Right(cached.toEntity());
+        return Left(
+          ApiFailure(message: e.toString().replaceAll('Exception: ', '')),
+        );
       }
-      return const Left(LocalDatabaseFailure(message: "No user logged in"));
-    } catch (e) {
-      return Left(LocalDatabaseFailure(message: e.toString()));
+    } else {
+      final cached = await _local.getCachedUser();
+      if (cached != null) return Right(cached.toEntity());
+      return const Left(
+        LocalDatabaseFailure(message: 'No internet connection'),
+      );
     }
   }
 
+  // ─── Logout ────────────────────────────────────────────────────────────────
   @override
   Future<Either<Failure, bool>> logout() async {
     try {
-      await _localDatasource.logout();
+      await _secureStorage.deleteToken();
+      await _local.clearUser();
       return const Right(true);
     } catch (e) {
       return Left(LocalDatabaseFailure(message: e.toString()));
     }
   }
 
+  // ─── Update Profile ────────────────────────────────────────────────────────
   @override
-  Future<Either<Failure, String>> uploadProfilePicture(File image) async {
-    if (!await _networkInfo.isConnected) {
-      return const Left(ApiFailure(message: 'No internet connection'));
-    }
-    try {
-      final filename = await _remoteDatasource.uploadProfilePicture(image);
-      return Right(filename);
-    } on DioException catch (e) {
-      return Left(
-        ApiFailure(
-          message: e.response?.data['message'] ?? 'Upload failed',
-          statusCode: e.response?.statusCode,
-        ),
-      );
-    } catch (e) {
-      return Left(ApiFailure(message: e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, AuthEntity>> updateUser(
-    String id,
+  Future<Either<Failure, AuthEntity>> updateProfile(
     Map<String, dynamic> data,
     File? image,
   ) async {
     if (!await _networkInfo.isConnected) {
-      return Left(ApiFailure(message: 'No internet connection'));
+      return const Left(ApiFailure(message: 'No internet connection'));
     }
     try {
-      // Always pass null for image (since we use separate upload)
-      final updatedApi = await _remoteDatasource.updateUser(id, data, null);
-
-      final hiveModel = AuthHiveModel.fromApiModel(updatedApi);
-      await _localDatasource.register(hiveModel);
-
-      return Right(updatedApi.toEntity());
+      final apiUser = await _remote.updateProfile(data, image);
+      final hiveModel = AuthHiveModel.fromApiModel(apiUser);
+      await _local.saveUser(hiveModel);
+      return Right(apiUser.toEntity());
     } on DioException catch (e) {
       return Left(
         ApiFailure(
@@ -169,7 +181,58 @@ class AuthRepository implements IAuthRepository {
         ),
       );
     } catch (e) {
-      return Left(ApiFailure(message: e.toString()));
+      return Left(
+        ApiFailure(message: e.toString().replaceAll('Exception: ', '')),
+      );
+    }
+  }
+
+  // ─── Forgot Password ───────────────────────────────────────────────────────
+  @override
+  Future<Either<Failure, bool>> forgotPassword(String email) async {
+    if (!await _networkInfo.isConnected) {
+      return const Left(ApiFailure(message: 'No internet connection'));
+    }
+    try {
+      await _remote.forgotPassword(email);
+      return const Right(true);
+    } on DioException catch (e) {
+      return Left(
+        ApiFailure(
+          message: e.response?.data['message'] ?? 'Request failed',
+          statusCode: e.response?.statusCode,
+        ),
+      );
+    } catch (e) {
+      return Left(
+        ApiFailure(message: e.toString().replaceAll('Exception: ', '')),
+      );
+    }
+  }
+
+  // ─── Reset Password ────────────────────────────────────────────────────────
+  @override
+  Future<Either<Failure, bool>> resetPassword(
+    String token,
+    String newPassword,
+  ) async {
+    if (!await _networkInfo.isConnected) {
+      return const Left(ApiFailure(message: 'No internet connection'));
+    }
+    try {
+      await _remote.resetPassword(token, newPassword);
+      return const Right(true);
+    } on DioException catch (e) {
+      return Left(
+        ApiFailure(
+          message: e.response?.data['message'] ?? 'Reset failed',
+          statusCode: e.response?.statusCode,
+        ),
+      );
+    } catch (e) {
+      return Left(
+        ApiFailure(message: e.toString().replaceAll('Exception: ', '')),
+      );
     }
   }
 }
