@@ -6,8 +6,7 @@ import 'package:sprint1_project/features/auth/data/repositories/auth_repository.
 import 'package:sprint1_project/features/auth/domain/repositories/auth_repository.dart';
 
 final logoutUsecaseProvider = Provider<LogoutUsecase>((ref) {
-  final authRepository = ref.read(authRepositoryProvider);
-  return LogoutUsecase(authRepository: authRepository);
+  return LogoutUsecase(authRepository: ref.read(authRepositoryProvider));
 });
 
 class LogoutUsecase implements UseCaseWithoutParams<bool> {
