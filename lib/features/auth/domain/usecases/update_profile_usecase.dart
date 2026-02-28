@@ -9,21 +9,19 @@ import 'package:sprint1_project/features/auth/data/repositories/auth_repository.
 import 'package:sprint1_project/features/auth/domain/entities/auth_entity.dart';
 import 'package:sprint1_project/features/auth/domain/repositories/auth_repository.dart';
 
-final updateProfileUsecaseProvider = Provider<UpdateProfileUsecase>((ref) {
-  final authRepository = ref.read(authRepositoryProvider);
-  return UpdateProfileUsecase(authRepository: authRepository);
-});
-
 class UpdateProfileParams extends Equatable {
-  final String id;
   final Map<String, dynamic> data;
-  final File? image; // Keep this
+  final File? image;
 
-  const UpdateProfileParams({required this.id, required this.data, this.image});
+  const UpdateProfileParams({required this.data, this.image});
 
   @override
-  List<Object?> get props => [id, data, image];
+  List<Object?> get props => [data, image];
 }
+
+final updateProfileUsecaseProvider = Provider<UpdateProfileUsecase>((ref) {
+  return UpdateProfileUsecase(authRepository: ref.read(authRepositoryProvider));
+});
 
 class UpdateProfileUsecase
     implements UseCaseWithParams<AuthEntity, UpdateProfileParams> {
@@ -34,6 +32,6 @@ class UpdateProfileUsecase
 
   @override
   Future<Either<Failure, AuthEntity>> call(UpdateProfileParams params) {
-    return _authRepository.updateUser(params.id, params.data, params.image);
+    return _authRepository.updateProfile(params.data, params.image);
   }
 }
