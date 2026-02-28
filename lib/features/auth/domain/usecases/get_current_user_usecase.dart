@@ -7,8 +7,9 @@ import 'package:sprint1_project/features/auth/domain/entities/auth_entity.dart';
 import 'package:sprint1_project/features/auth/domain/repositories/auth_repository.dart';
 
 final getCurrentUserUsecaseProvider = Provider<GetCurrentUserUsecase>((ref) {
-  final authRepository = ref.read(authRepositoryProvider);
-  return GetCurrentUserUsecase(authRepository: authRepository);
+  return GetCurrentUserUsecase(
+    authRepository: ref.read(authRepositoryProvider),
+  );
 });
 
 class GetCurrentUserUsecase implements UseCaseWithoutParams<AuthEntity> {
