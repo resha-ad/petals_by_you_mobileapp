@@ -1,5 +1,7 @@
+// lib/features/items/presentation/widgets/item_card_widget.dart
 import 'package:flutter/material.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
+import 'package:sprint1_project/features/favorites/presentation/widgets/favorite_button_widget.dart';
 import 'package:sprint1_project/features/items/domain/entities/item_entity.dart';
 import 'package:sprint1_project/features/items/presentation/screens/item_detail_screen.dart';
 
@@ -12,13 +14,13 @@ const _kTextLight = Color(0xFF9E9E9E);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Grid card
-// Pass isOffline=true when the data was read from Hive (isFromCache).
-// The image area then shows a local asset placeholder immediately instead of
-// attempting (and failing) to load the network URL.
 // ─────────────────────────────────────────────────────────────────────────────
-class ItemCard extends StatefulWidget {
+class ItemCard extends StatelessWidget {
   final ItemEntity item;
   final bool isOffline;
+
+  /// [onFavoriteTap] is kept for API compatibility but the actual toggle is
+  /// handled internally by [FavoriteButton] via the favorites view model.
   final VoidCallback? onFavoriteTap;
 
   const ItemCard({
@@ -29,16 +31,7 @@ class ItemCard extends StatefulWidget {
   });
 
   @override
-  State<ItemCard> createState() => _ItemCardState();
-}
-
-class _ItemCardState extends State<ItemCard> {
-  bool _isFav = false;
-
-  @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -95,8 +88,8 @@ class _ItemCardState extends State<ItemCard> {
                       ],
                     ),
                   ),
-                  // Offline indicator over image
-                  if (widget.isOffline)
+                  // Offline indicator
+                  if (isOffline)
                     Positioned(
                       top: 8,
                       right: 8,
@@ -113,39 +106,16 @@ class _ItemCardState extends State<ItemCard> {
                         ),
                       ),
                     ),
-                  // Favourite button
-                  if (!widget.isOffline)
+                  // Favourite button — only shown when online
+                  if (!isOffline)
                     Positioned(
                       bottom: 8,
                       right: 8,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => _isFav = !_isFav);
-                          widget.onFavoriteTap?.call();
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: _isFav
-                                ? Colors.red.shade50
-                                : Colors.white.withOpacity(0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _isFav
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            size: 16,
-                            color: _isFav ? Colors.red : _kTextMid,
-                          ),
-                        ),
+                      child: FavoriteButton(
+                        refId: item.id,
+                        type: 'product',
+                        size: 16,
+                        withBackground: true,
                       ),
                     ),
                 ],
@@ -161,8 +131,7 @@ class _ItemCardState extends State<ItemCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Name — shimmer-like grey box when offline
-                    widget.isOffline
+                    isOffline
                         ? _OfflinePlaceholderLine(
                             width: double.infinity,
                             height: 13,
@@ -178,8 +147,7 @@ class _ItemCardState extends State<ItemCard> {
                               height: 1.3,
                             ),
                           ),
-                    // Price row
-                    widget.isOffline
+                    isOffline
                         ? _OfflinePlaceholderLine(width: 80, height: 15)
                         : Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
@@ -229,9 +197,8 @@ class _ItemCardState extends State<ItemCard> {
   }
 
   Widget _buildImage(ItemEntity item) {
-    // Offline → always show local asset placeholder, never hit the network
-    if (widget.isOffline || item.primaryImage == null) {
-      return _ImagePlaceholder(isOffline: widget.isOffline);
+    if (isOffline || item.primaryImage == null) {
+      return _ImagePlaceholder(isOffline: isOffline);
     }
     return Image.network(
       ApiEndpoints.fullImageUrl(item.primaryImage!),
@@ -242,9 +209,9 @@ class _ItemCardState extends State<ItemCard> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// List tile — used in search results
+// List tile
 // ─────────────────────────────────────────────────────────────────────────────
-class ItemListTile extends StatefulWidget {
+class ItemListTile extends StatelessWidget {
   final ItemEntity item;
   final bool isOffline;
   final VoidCallback? onFavoriteTap;
@@ -257,18 +224,9 @@ class ItemListTile extends StatefulWidget {
   });
 
   @override
-  State<ItemListTile> createState() => _ItemListTileState();
-}
-
-class _ItemListTileState extends State<ItemListTile> {
-  bool _isFav = false;
-
-  @override
   Widget build(BuildContext context) {
-    final item = widget.item;
-
     return GestureDetector(
-      onTap: widget.isOffline
+      onTap: isOffline
           ? null
           : () => Navigator.push(
               context,
@@ -291,7 +249,6 @@ class _ItemListTileState extends State<ItemListTile> {
         ),
         child: Row(
           children: [
-            // Image
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(
                 left: Radius.circular(18),
@@ -299,8 +256,8 @@ class _ItemListTileState extends State<ItemListTile> {
               child: SizedBox(
                 width: 90,
                 height: 90,
-                child: widget.isOffline || item.primaryImage == null
-                    ? _ImagePlaceholder(isOffline: widget.isOffline)
+                child: isOffline || item.primaryImage == null
+                    ? _ImagePlaceholder(isOffline: isOffline)
                     : Image.network(
                         ApiEndpoints.fullImageUrl(item.primaryImage!),
                         fit: BoxFit.cover,
@@ -310,12 +267,10 @@ class _ItemListTileState extends State<ItemListTile> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Info
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: widget.isOffline
+                child: isOffline
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -384,22 +339,14 @@ class _ItemListTileState extends State<ItemListTile> {
                       ),
               ),
             ),
-
-            if (!widget.isOffline)
+            if (!isOffline)
               Padding(
                 padding: const EdgeInsets.only(right: 12),
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() => _isFav = !_isFav);
-                    widget.onFavoriteTap?.call();
-                  },
-                  child: Icon(
-                    _isFav
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    size: 22,
-                    color: _isFav ? Colors.red : _kTextLight,
-                  ),
+                child: FavoriteButton(
+                  refId: item.id,
+                  type: 'product',
+                  size: 22,
+                  withBackground: false,
                 ),
               ),
           ],
@@ -409,11 +356,8 @@ class _ItemListTileState extends State<ItemListTile> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
-/// Shows a local asset when offline, a flower icon when no image available.
 class _ImagePlaceholder extends StatelessWidget {
   final bool isOffline;
   const _ImagePlaceholder({required this.isOffline});
@@ -424,7 +368,6 @@ class _ImagePlaceholder extends StatelessWidget {
       color: const Color(0xFFE8F4EE),
       child: Center(
         child: isOffline
-            // Use local asset when offline so nothing loads from the network
             ? Image.asset(
                 'assets/images/placeholder_flower.png',
                 fit: BoxFit.cover,
@@ -446,7 +389,6 @@ class _ImagePlaceholder extends StatelessWidget {
   }
 }
 
-/// A muted grey rectangle — skeleton/placeholder line for offline cards.
 class _OfflinePlaceholderLine extends StatelessWidget {
   final double width;
   final double height;
