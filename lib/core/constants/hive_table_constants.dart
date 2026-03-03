@@ -3,15 +3,26 @@ class HiveTableConstant {
 
   static const String dbName = 'petals_by_you_db';
 
-  //Auth
+  // Auth
   static const int authTypeId = 1;
   static const String authTable = 'auth_table';
 
   // Items
-  // authTypeId = 1 is already taken, so items uses 2.
   static const int itemTypeId = 2;
   static const String itemTable = 'item_table';
 
-  //potential future settings storage
+  // Favorites
+  static const int favoritesTypeId = 3;
+  static const String favoritesTable = 'favorites_table';
+
+  // Cart
+  static const int cartTypeId = 4;
+  static const String cartTable = 'cart_table';
+
+  // Orders
+  static const int orderTypeId = 5;
+  static const String orderTable = 'order_table';
+
+  // Settings
   static const String appSettingsTable = 'app_settings';
 }

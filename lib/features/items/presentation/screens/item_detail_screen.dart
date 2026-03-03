@@ -1,11 +1,19 @@
+// lib/features/items/presentation/screens/item_detail_screen.dart
+//
+// Changes from original:
+//  - Favourite button now uses FavoriteButton widget (real toggle)
+//  - "Add to Bag" actually calls CartViewModel.addProduct
+//  - Cart loading indicator shown while adding
+//
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
+import 'package:sprint1_project/features/cart/presentation/view_model/cart_view_model.dart';
+import 'package:sprint1_project/features/favorites/presentation/widgets/favorite_button_widget.dart';
 import 'package:sprint1_project/features/items/presentation/state/item_state.dart';
 import 'package:sprint1_project/features/items/presentation/view_model/item_view_model.dart';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF1B4332);
 const _kAccent = Color(0xFFD4A853);
 const _kBackground = Color(0xFFF9F6F0);
@@ -25,7 +33,7 @@ class ItemDetailScreen extends ConsumerStatefulWidget {
 class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   int _selectedImageIndex = 0;
   int _quantity = 1;
-  bool _isFavorite = false;
+  bool _addingToCart = false;
 
   @override
   void initState() {
@@ -35,29 +43,48 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     });
   }
 
+  Future<void> _addToCart() async {
+    setState(() => _addingToCart = true);
+    final success = await ref
+        .read(cartViewModelProvider.notifier)
+        .addProduct(itemId: widget.itemId, quantity: _quantity);
+    if (!mounted) return;
+    setState(() => _addingToCart = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Text(success ? '💐 ' : '⚠️ '),
+            Text(
+              success
+                  ? 'Added to cart!'
+                  : ref.read(cartViewModelProvider).errorMessage ??
+                        'Failed to add',
+            ),
+          ],
+        ),
+        backgroundColor: success ? _kPrimary : Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+    if (success) ref.read(cartViewModelProvider.notifier).clearError();
+  }
+
   @override
   Widget build(BuildContext context) {
     final itemState = ref.watch(itemViewModelProvider);
     final item = itemState.selectedItem;
 
-    // Loading
     if (itemState.status == ItemStatus.loading) {
       return Scaffold(
         backgroundColor: _kBackground,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              CircularProgressIndicator(color: _kPrimary, strokeWidth: 2),
-              SizedBox(height: 16),
-              Text('Loading...', style: TextStyle(color: _kTextLight)),
-            ],
-          ),
+        body: const Center(
+          child: CircularProgressIndicator(color: _kPrimary, strokeWidth: 2),
         ),
       );
     }
 
-    // Error / not found
     if (item == null || itemState.status == ItemStatus.error) {
       return Scaffold(
         backgroundColor: _kBackground,
@@ -67,16 +94,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           leading: const BackButton(color: _kTextDark),
         ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('😔', style: TextStyle(fontSize: 52)),
-              const SizedBox(height: 12),
-              Text(
-                itemState.errorMessage ?? 'Item not found',
-                style: const TextStyle(color: _kTextMid, fontSize: 14),
-              ),
-            ],
+          child: Text(
+            itemState.errorMessage ?? 'Item not found',
+            style: const TextStyle(color: _kTextMid, fontSize: 14),
           ),
         ),
       );
@@ -94,10 +114,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         extendBodyBehindAppBar: true,
         body: Stack(
           children: [
-            // ── Main scroll area ────────────────────────────────────────────
             CustomScrollView(
               slivers: [
-                // ── Image gallery ─────────────────────────────────────────
+                // ── Image gallery ──────────────────────────────────────────
                 SliverAppBar(
                   expandedHeight: 360,
                   pinned: true,
@@ -108,7 +127,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        // Image pager
                         imageCount > 0
                             ? PageView.builder(
                                 itemCount: imageCount,
@@ -122,8 +140,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                 ),
                               )
                             : _imageFallback(),
-
-                        // Gradient overlay
                         Positioned(
                           bottom: 0,
                           left: 0,
@@ -139,8 +155,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             ),
                           ),
                         ),
-
-                        // Dots
                         if (imageCount > 1)
                           Positioned(
                             bottom: 16,
@@ -172,7 +186,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ),
                 ),
 
-                // ── Content card ────────────────────────────────────────────
+                // ── Content ────────────────────────────────────────────────
                 SliverToBoxAdapter(
                   child: Container(
                     decoration: const BoxDecoration(
@@ -184,7 +198,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Drag handle
                         Center(
                           child: Container(
                             margin: const EdgeInsets.only(top: 10),
@@ -197,13 +210,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Category + badges row
+                              // Badges
                               Row(
                                 children: [
                                   if (item.category != null)
@@ -232,7 +244,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                               ),
                               const SizedBox(height: 14),
 
-                              // Name
                               Text(
                                 item.name,
                                 style: const TextStyle(
@@ -245,7 +256,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Price row
+                              // Price
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
@@ -334,7 +345,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
                               const SizedBox(height: 24),
 
-                              // Description
                               const Text(
                                 'About this bouquet',
                                 style: TextStyle(
@@ -420,7 +430,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               ],
             ),
 
-            // ── Floating nav bar (back + favourite) ────────────────────────
+            // ── Floating nav (back + favourite) ────────────────────────────
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               left: 16,
@@ -432,18 +442,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     icon: Icons.arrow_back_ios_new_rounded,
                     onTap: () => Navigator.pop(context),
                   ),
-                  _FloatBtn(
-                    icon: _isFavorite
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    iconColor: _isFavorite ? Colors.red : null,
-                    onTap: () => setState(() => _isFavorite = !_isFavorite),
+                  // Real favourite toggle
+                  FavoriteButton(
+                    refId: widget.itemId,
+                    type: 'product',
+                    size: 20,
+                    withBackground: true,
+                    padding: const EdgeInsets.all(8),
                   ),
                 ],
               ),
             ),
 
-            // ── Bottom add-to-cart bar ───────────────────────────────────
+            // ── Bottom add-to-cart bar ──────────────────────────────────────
             Positioned(
               bottom: 0,
               left: 0,
@@ -467,7 +478,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 ),
                 child: Row(
                   children: [
-                    // Total price
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -488,25 +498,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: GestureDetector(
-                        onTap: item.stock == 0
+                        onTap: (item.stock == 0 || _addingToCart)
                             ? null
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Row(
-                                      children: const [
-                                        Text('💐 '),
-                                        Text('Added to cart!'),
-                                      ],
-                                    ),
-                                    backgroundColor: _kPrimary,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                );
-                              },
+                            : _addToCart,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           height: 52,
@@ -526,32 +520,41 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                 : [],
                           ),
                           child: Center(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.shopping_bag_outlined,
-                                  color: item.stock == 0
-                                      ? Colors.grey.shade500
-                                      : Colors.white,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  item.stock == 0
-                                      ? 'Out of Stock'
-                                      : 'Add to Bag',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: item.stock == 0
-                                        ? Colors.grey.shade500
-                                        : Colors.white,
-                                    letterSpacing: 0.2,
+                            child: _addingToCart
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.shopping_bag_outlined,
+                                        color: item.stock == 0
+                                            ? Colors.grey.shade500
+                                            : Colors.white,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        item.stock == 0
+                                            ? 'Out of Stock'
+                                            : 'Add to Bag',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: item.stock == 0
+                                              ? Colors.grey.shade500
+                                              : Colors.white,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       ),
@@ -572,7 +575,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   );
 }
 
-// ── Sub-widgets ───────────────────────────────────────────────────────────────
+// ── Reusable sub-widgets ──────────────────────────────────────────────────────
 class _Chip extends StatelessWidget {
   final String label;
   final Color bg;
@@ -619,7 +622,6 @@ class _DetailChip extends StatelessWidget {
         : low
         ? Colors.orange.shade700
         : _kTextMid;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
@@ -647,9 +649,8 @@ class _DetailChip extends StatelessWidget {
 
 class _FloatBtn extends StatelessWidget {
   final IconData icon;
-  final Color? iconColor;
   final VoidCallback onTap;
-  const _FloatBtn({required this.icon, required this.onTap, this.iconColor});
+  const _FloatBtn({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -669,7 +670,7 @@ class _FloatBtn extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(icon, color: iconColor ?? _kTextDark, size: 18),
+        child: Icon(icon, color: _kTextDark, size: 18),
       ),
     );
   }

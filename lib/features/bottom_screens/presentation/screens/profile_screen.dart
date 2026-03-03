@@ -10,6 +10,7 @@ import 'package:sprint1_project/features/auth/domain/entities/auth_entity.dart';
 import 'package:sprint1_project/features/auth/presentation/screens/login_screen.dart';
 import 'package:sprint1_project/features/auth/presentation/state/auth_state.dart';
 import 'package:sprint1_project/features/auth/presentation/view_model/auth_view_model.dart';
+import 'package:sprint1_project/features/orders/presentation/screen/orders_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -119,7 +120,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _saveProfile() async {
     final user = ref.read(authViewModelProvider).user;
     if (user == null) return;
-
     setState(() => _isSubmitting = true);
 
     final data = <String, dynamic>{};
@@ -171,7 +171,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ref.read(authViewModelProvider.notifier).clearError();
       }
     }
-
     setState(() => _isSubmitting = false);
   }
 
@@ -223,7 +222,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    // ── Avatar section ───────────────────────────────────────
+                    // ── Avatar ───────────────────────────────────────────────
                     Stack(
                       children: [
                         CircleAvatar(
@@ -297,9 +296,81 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                     ],
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    // ── Form card ────────────────────────────────────────────
+                    // ── Orders shortcut card ─────────────────────────────────
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F4EE),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.receipt_long_outlined,
+                                color: Color(0xFF1B4332),
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'My Orders',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF2D2D2D),
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    'Track and view your order history',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF9E9E9E),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Color(0xFF9E9E9E),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── Personal info form ───────────────────────────────────
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -325,7 +396,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
                           Row(
                             children: [
                               Expanded(
@@ -477,7 +547,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                     const SizedBox(height: 12),
 
-                    // ── Logout button ────────────────────────────────────────
+                    // ── Logout ───────────────────────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -513,7 +583,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 30),
                   ],
                 ),

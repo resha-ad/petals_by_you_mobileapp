@@ -136,15 +136,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     isOffline: isOffline,
                   ),
                   // Bouquets
-                  ..._buildSection(
-                    label: 'Bouquets',
-                    icon: Icons.local_florist_rounded,
-                    items: items
-                        .where((i) => i.category?.toLowerCase() == 'bouquets')
-                        .take(6)
-                        .toList(),
-                    isOffline: isOffline,
-                  ),
+                  // ..._buildSection(
+                  //   label: 'Bouquets',
+                  //   icon: Icons.local_florist_rounded,
+                  //   items: items
+                  //       .where((i) => i.category?.toLowerCase() == 'bouquets')
+                  //       .take(8)
+                  //       .toList(),
+                  //   isOffline: isOffline,
+                  // ),
                   // Arrangements
                   ..._buildSection(
                     label: 'Arrangements',
