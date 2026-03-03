@@ -29,6 +29,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(favoritesViewModelProvider);
+    final isOffline = state.isFromCache;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -47,6 +48,16 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             slivers: [
               // ── Header ───────────────────────────────────────────────────
               _FavoritesHeader(count: state.items.length),
+
+              // ── Offline banner ───────────────────────────────────────────
+              if (isOffline)
+                SliverToBoxAdapter(
+                  child: _OfflineBanner(
+                    onRetry: () => ref
+                        .read(favoritesViewModelProvider.notifier)
+                        .loadFavorites(),
+                  ),
+                ),
 
               // ── Body ────────────────────────────────────────────────────
               if (state.status == FavoritesStatus.loading &&
@@ -76,7 +87,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 110),
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
-                      (_, i) => FavoriteItemCard(favorite: state.items[i]),
+                      (_, i) => FavoriteItemCard(
+                        favorite: state.items[i],
+                        isOffline: isOffline,
+                      ),
                       childCount: state.items.length,
                     ),
                     gridDelegate:
@@ -156,6 +170,56 @@ class _FavoritesHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Offline banner ────────────────────────────────────────────────────────────
+class _OfflineBanner extends StatelessWidget {
+  final VoidCallback onRetry;
+  const _OfflineBanner({required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD970), width: 1),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.wifi_off_rounded,
+            size: 16,
+            color: Color(0xFFB08800),
+          ),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'You\'re offline — showing saved favourites',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF7A5E00),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: onRetry,
+            child: const Text(
+              'Retry',
+              style: TextStyle(
+                fontSize: 12,
+                color: _kPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

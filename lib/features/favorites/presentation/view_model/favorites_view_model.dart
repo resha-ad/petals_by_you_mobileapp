@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sprint1_project/core/services/connectivity/network_info.dart';
 import 'package:sprint1_project/features/favorites/domain/usecases/favorites_usecases.dart';
 import 'package:sprint1_project/features/favorites/presentation/state/favorites_state.dart';
 
@@ -11,18 +12,24 @@ class FavoritesViewModel extends Notifier<FavoritesState> {
   late final GetFavoritesUsecase _getFavorites;
   late final AddFavoriteUsecase _addFavorite;
   late final RemoveFavoriteUsecase _removeFavorite;
+  late final INetworkInfo _networkInfo;
 
   @override
   FavoritesState build() {
     _getFavorites = ref.read(getFavoritesUsecaseProvider);
     _addFavorite = ref.read(addFavoriteUsecaseProvider);
     _removeFavorite = ref.read(removeFavoriteUsecaseProvider);
+    _networkInfo = ref.read(networkInfoProvider);
     return const FavoritesState();
   }
 
   // ── loadFavorites ─────────────────────────────────────────────────────────
   Future<void> loadFavorites() async {
     state = state.copyWith(status: FavoritesStatus.loading, clearError: true);
+
+    // Check connectivity first so we can set isFromCache correctly
+    final isOnline = await _networkInfo.isConnected;
+
     final result = await _getFavorites();
     result.fold(
       (failure) => state = state.copyWith(
@@ -32,12 +39,13 @@ class FavoritesViewModel extends Notifier<FavoritesState> {
       (favorites) => state = state.copyWith(
         status: FavoritesStatus.loaded,
         items: favorites.items,
+        // Offline → data came from cache; online → fresh from API
+        isFromCache: !isOnline,
       ),
     );
   }
 
   // ── toggleFavorite ────────────────────────────────────────────────────────
-  /// Adds if not yet favorited, removes if already favorited.
   Future<void> toggleFavorite({
     required String refId,
     String type = 'product',
@@ -52,20 +60,17 @@ class FavoritesViewModel extends Notifier<FavoritesState> {
         : await _addFavorite(AddFavoriteParams(type: type, refId: refId));
 
     result.fold(
-      (failure) {
-        state = state.copyWith(
-          pendingIds: state.pendingIds.difference({refId}),
-          errorMessage: failure.message,
-        );
-      },
-      (favorites) {
-        state = state.copyWith(
-          status: FavoritesStatus.loaded,
-          items: favorites.items,
-          pendingIds: state.pendingIds.difference({refId}),
-          clearError: true,
-        );
-      },
+      (failure) => state = state.copyWith(
+        pendingIds: state.pendingIds.difference({refId}),
+        errorMessage: failure.message,
+      ),
+      (favorites) => state = state.copyWith(
+        status: FavoritesStatus.loaded,
+        items: favorites.items,
+        pendingIds: state.pendingIds.difference({refId}),
+        isFromCache: false,
+        clearError: true,
+      ),
     );
   }
 
@@ -90,6 +95,7 @@ class FavoritesViewModel extends Notifier<FavoritesState> {
         status: FavoritesStatus.loaded,
         items: favorites.items,
         pendingIds: state.pendingIds.difference({refId}),
+        isFromCache: false,
         clearError: true,
       ),
     );
@@ -111,6 +117,7 @@ class FavoritesViewModel extends Notifier<FavoritesState> {
         status: FavoritesStatus.loaded,
         items: favorites.items,
         pendingIds: state.pendingIds.difference({refId}),
+        isFromCache: false,
         clearError: true,
       ),
     );

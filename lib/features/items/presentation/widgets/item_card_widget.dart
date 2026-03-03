@@ -9,7 +9,6 @@ import 'package:sprint1_project/features/items/presentation/screens/item_detail_
 const _kPrimary = Color(0xFF1B4332);
 const _kAccent = Color(0xFFD4A853);
 const _kTextDark = Color(0xFF1A1A1A);
-const _kTextMid = Color(0xFF5C5C5C);
 const _kTextLight = Color(0xFF9E9E9E);
 
 // ─────────────────────────────────────────────────────────────────────────────

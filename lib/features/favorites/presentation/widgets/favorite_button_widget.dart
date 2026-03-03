@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sprint1_project/core/services/connectivity/network_info.dart';
 import 'package:sprint1_project/features/favorites/presentation/view_model/favorites_view_model.dart';
 
 /// A self-contained heart icon button.
 /// Reads and writes to [favoritesViewModelProvider] automatically.
+/// Automatically disables itself when the device is offline.
 ///
 /// Usage:
 /// ```dart
@@ -34,6 +36,9 @@ class FavoriteButton extends ConsumerWidget {
     final isFav = state.isFavorite(refId);
     final isPending = state.isPending(refId);
 
+    // Check connectivity — disable the button entirely when offline
+    final networkInfo = ref.read(networkInfoProvider);
+
     Widget icon = isPending
         ? SizedBox(
             width: size,
@@ -49,12 +54,30 @@ class FavoriteButton extends ConsumerWidget {
             color: isFav ? Colors.red : const Color(0xFF5C5C5C),
           );
 
+    Future<void> onTap() async {
+      final isOnline = await networkInfo.isConnected;
+      if (!isOnline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'You\'re offline. Connect to manage favourites.',
+            ),
+            backgroundColor: const Color(0xFF1B4332),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        return;
+      }
+      ref
+          .read(favoritesViewModelProvider.notifier)
+          .toggleFavorite(refId: refId, type: type);
+    }
+
     final btn = GestureDetector(
-      onTap: isPending
-          ? null
-          : () => ref
-                .read(favoritesViewModelProvider.notifier)
-                .toggleFavorite(refId: refId, type: type),
+      onTap: isPending ? null : onTap,
       child: withBackground
           ? AnimatedContainer(
               duration: const Duration(milliseconds: 200),

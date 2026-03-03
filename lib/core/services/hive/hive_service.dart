@@ -3,7 +3,12 @@ import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sprint1_project/core/constants/hive_table_constants.dart';
 import 'package:sprint1_project/features/auth/data/models/auth_hive_model.dart';
+import 'package:sprint1_project/features/cart/data/models/cart_hive_model.dart';
+import 'package:sprint1_project/features/cart/domain/entities/cart_entity.dart';
+import 'package:sprint1_project/features/favorites/data/models/favorites_hive_model.dart';
 import 'package:sprint1_project/features/items/data/models/item_hive_model.dart';
+import 'package:sprint1_project/features/orders/data/models/order_hive_model.dart';
+import 'package:sprint1_project/features/orders/domain/entities/orders_entity.dart';
 
 final hiveServiceProvider = Provider<HiveService>((ref) => HiveService());
 
@@ -19,44 +24,45 @@ class HiveService {
     if (!Hive.isAdapterRegistered(HiveTableConstant.authTypeId)) {
       Hive.registerAdapter(AuthHiveModelAdapter());
     }
-    // Items adapter
     if (!Hive.isAdapterRegistered(HiveTableConstant.itemTypeId)) {
       Hive.registerAdapter(ItemHiveModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(HiveTableConstant.favoritesTypeId)) {
+      Hive.registerAdapter(FavoriteItemHiveModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(HiveTableConstant.cartTypeId)) {
+      Hive.registerAdapter(CartItemHiveModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(HiveTableConstant.orderTypeId)) {
+      Hive.registerAdapter(OrderHiveModelAdapter());
     }
   }
 
   Future<void> _openBoxes() async {
     await Hive.openBox<AuthHiveModel>(HiveTableConstant.authTable);
     await Hive.openBox(HiveTableConstant.appSettingsTable);
-    //Items box
     await Hive.openBox<ItemHiveModel>(HiveTableConstant.itemTable);
+    await Hive.openBox<FavoriteItemHiveModel>(HiveTableConstant.favoritesTable);
+    await Hive.openBox<CartItemHiveModel>(HiveTableConstant.cartTable);
+    await Hive.openBox<OrderHiveModel>(HiveTableConstant.orderTable);
   }
 
   Future<void> close() async => await Hive.close();
 
-  // Auth box
+  // ── Auth ───────────────────────────────────────────────────────────────────
   Box<AuthHiveModel> get _authBox =>
       Hive.box<AuthHiveModel>(HiveTableConstant.authTable);
 
   static const String _currentUserKey = 'current_user';
 
-  Future<void> saveUser(AuthHiveModel model) async {
-    await _authBox.put(_currentUserKey, model);
-  }
+  Future<void> saveUser(AuthHiveModel model) async =>
+      await _authBox.put(_currentUserKey, model);
+  AuthHiveModel? getCachedUser() => _authBox.get(_currentUserKey);
+  Future<void> clearUser() async => await _authBox.delete(_currentUserKey);
+  bool isEmailExists(String email) =>
+      _authBox.values.any((u) => u.email == email);
 
-  AuthHiveModel? getCachedUser() {
-    return _authBox.get(_currentUserKey);
-  }
-
-  Future<void> clearUser() async {
-    await _authBox.delete(_currentUserKey);
-  }
-
-  bool isEmailExists(String email) {
-    return _authBox.values.any((u) => u.email == email);
-  }
-
-  // Items box
+  // ── Items ──────────────────────────────────────────────────────────────────
   Box<ItemHiveModel> get _itemBox =>
       Hive.box<ItemHiveModel>(HiveTableConstant.itemTable);
 
@@ -65,21 +71,12 @@ class HiveService {
     await _itemBox.putAll({for (final i in items) i.itemId: i});
   }
 
-  Future<void> saveItem(ItemHiveModel item) async {
-    await _itemBox.put(item.itemId, item);
-  }
-
+  Future<void> saveItem(ItemHiveModel item) async =>
+      await _itemBox.put(item.itemId, item);
   List<ItemHiveModel> getAllItems() => _itemBox.values.toList();
-
   ItemHiveModel? getItemById(String itemId) => _itemBox.get(itemId);
-
-  Future<void> deleteItem(String itemId) async {
-    await _itemBox.delete(itemId);
-  }
-
-  Future<void> clearItems() async {
-    await _itemBox.clear();
-  }
+  Future<void> deleteItem(String itemId) async => await _itemBox.delete(itemId);
+  Future<void> clearItems() async => await _itemBox.clear();
 
   bool isItemCacheFresh({Duration maxAge = const Duration(hours: 1)}) {
     if (_itemBox.isEmpty) return false;
@@ -88,4 +85,66 @@ class HiveService {
         .reduce((a, b) => a.isAfter(b) ? a : b);
     return DateTime.now().difference(latest) < maxAge;
   }
+
+  // ── Favorites ──────────────────────────────────────────────────────────────
+  Box<FavoriteItemHiveModel> get _favoritesBox =>
+      Hive.box<FavoriteItemHiveModel>(HiveTableConstant.favoritesTable);
+
+  Future<void> saveFavorites(List<FavoriteItemHiveModel> items) async {
+    await _favoritesBox.clear();
+    await _favoritesBox.putAll({for (final i in items) i.refId: i});
+  }
+
+  List<FavoriteItemHiveModel> getCachedFavorites() =>
+      _favoritesBox.values.toList();
+  Future<void> clearFavorites() async => await _favoritesBox.clear();
+
+  // ── Cart ───────────────────────────────────────────────────────────────────
+  Box<CartItemHiveModel> get _cartBox =>
+      Hive.box<CartItemHiveModel>(HiveTableConstant.cartTable);
+
+  static const String _cartTotalKey = '_cart_total_';
+
+  Future<void> saveCart(List<CartItemHiveModel> items, double total) async {
+    await _cartBox.clear();
+    await _cartBox.putAll({for (final i in items) i.refId: i});
+    // Store total as a special entry's subtotal (hack-free: use app settings box)
+    final settingsBox = Hive.box(HiveTableConstant.appSettingsTable);
+    await settingsBox.put(_cartTotalKey, total);
+  }
+
+  CartEntity? getCachedCart() {
+    final items = _cartBox.values.toList();
+    if (items.isEmpty) return null;
+    final settingsBox = Hive.box(HiveTableConstant.appSettingsTable);
+    final total = (settingsBox.get(_cartTotalKey) as num?)?.toDouble() ?? 0.0;
+    return CartEntity(
+      userId: '',
+      items: items.map((m) => m.toEntity()).toList(),
+      total: total,
+    );
+  }
+
+  Future<void> clearCart() async {
+    await _cartBox.clear();
+    final settingsBox = Hive.box(HiveTableConstant.appSettingsTable);
+    await settingsBox.delete(_cartTotalKey);
+  }
+
+  // ── Orders ─────────────────────────────────────────────────────────────────
+  Box<OrderHiveModel> get _orderBox =>
+      Hive.box<OrderHiveModel>(HiveTableConstant.orderTable);
+
+  Future<void> saveOrders(List<OrderEntity> orders) async {
+    await _orderBox.clear();
+    await _orderBox.putAll({
+      for (final o in orders) o.id: OrderHiveModel.fromEntity(o),
+    });
+  }
+
+  List<OrderEntity> getCachedOrders() =>
+      _orderBox.values.map((m) => m.toEntity()).toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+  Future<void> clearOrders() async => await _orderBox.clear();
 }
