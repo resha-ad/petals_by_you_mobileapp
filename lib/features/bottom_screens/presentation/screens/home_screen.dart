@@ -1,13 +1,16 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/features/auth/presentation/view_model/auth_view_model.dart';
+import 'package:sprint1_project/features/bottom_screens/presentation/screens/search_screen.dart';
+import 'package:sprint1_project/features/custom_bouquet/presentation/screens/custom_bouquet_builder_screen.dart';
 import 'package:sprint1_project/features/items/domain/entities/item_entity.dart';
 import 'package:sprint1_project/features/items/presentation/state/item_state.dart';
 import 'package:sprint1_project/features/items/presentation/view_model/item_view_model.dart';
 import 'package:sprint1_project/features/items/presentation/widgets/item_card_widget.dart';
+import 'package:sprint1_project/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:sprint1_project/features/notifications/presentation/view_model/notification_view_model.dart';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF1B4332);
 const _kAccent = Color(0xFFD4A853);
 const _kBackground = Color(0xFFF9F6F0);
@@ -15,13 +18,13 @@ const _kSurface = Color(0xFFFFFFFF);
 const _kTextDark = Color(0xFF1A1A1A);
 const _kTextLight = Color(0xFF9E9E9E);
 
-// Separate provider — home state never touches search state
 final homeItemsProvider = NotifierProvider<ItemViewModel, ItemState>(
   ItemViewModel.new,
 );
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
@@ -76,10 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                // ── Header ──────────────────────────────────────────────────
                 SliverToBoxAdapter(child: _Header(firstName: user?.firstName)),
-
-                // ── Offline banner ───────────────────────────────────────────
                 if (isOffline)
                   SliverToBoxAdapter(
                     child: _OfflineBanner(
@@ -87,11 +87,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           ref.read(homeItemsProvider.notifier).loadItems(),
                     ),
                   ),
-
-                // ── Brand / welcome banner ───────────────────────────────────
                 const SliverToBoxAdapter(child: _BrandBanner()),
-
-                // ── Loading / error full-screen states ───────────────────────
+                const SliverToBoxAdapter(child: _BouquetBuilderBanner()),
                 if (state.status == ItemStatus.loading && items.isEmpty)
                   SliverFillRemaining(
                     child: Center(
@@ -120,32 +117,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ),
                   )
                 else ...[
-                  // ── Sectioned content ──────────────────────────────────────
-                  // Featured
                   ..._buildSection(
                     label: 'Featured',
                     icon: Icons.star_rounded,
                     items: items.where((i) => i.isFeatured).take(6).toList(),
                     isOffline: isOffline,
                   ),
-                  // New Collection (most recently added — first in list)
                   ..._buildSection(
                     label: 'New Collection',
                     icon: Icons.fiber_new_rounded,
                     items: items.take(6).toList(),
                     isOffline: isOffline,
                   ),
-                  // Bouquets
-                  // ..._buildSection(
-                  //   label: 'Bouquets',
-                  //   icon: Icons.local_florist_rounded,
-                  //   items: items
-                  //       .where((i) => i.category?.toLowerCase() == 'bouquets')
-                  //       .take(8)
-                  //       .toList(),
-                  //   isOffline: isOffline,
-                  // ),
-                  // Arrangements
                   ..._buildSection(
                     label: 'Arrangements',
                     icon: Icons.spa_rounded,
@@ -157,7 +140,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         .toList(),
                     isOffline: isOffline,
                   ),
-                  // Gift Sets
                   ..._buildSection(
                     label: 'Gift Sets',
                     icon: Icons.card_giftcard_rounded,
@@ -167,7 +149,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         .toList(),
                     isOffline: isOffline,
                   ),
-                  // Bottom padding
                   const SliverToBoxAdapter(child: SizedBox(height: 110)),
                 ],
               ],
@@ -216,13 +197,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final String? firstName;
   const _Header({this.firstName});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final top = MediaQuery.of(context).padding.top;
+    final unreadCount = ref.watch(notificationViewModelProvider).unreadCount;
+
     return Container(
       padding: EdgeInsets.fromLTRB(20, top + 18, 20, 24),
       decoration: const BoxDecoration(
@@ -256,11 +239,24 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          // Cart
+          _IconBtn(
+            icon: Icons.search_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            ),
+          ),
+          const SizedBox(width: 8),
           _IconBtn(icon: Icons.shopping_bag_outlined, onTap: () {}),
           const SizedBox(width: 8),
-          // Notifications
-          _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {}),
+          _IconBtnWithBadge(
+            icon: Icons.notifications_none_rounded,
+            badge: unreadCount,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+            ),
+          ),
         ],
       ),
     );
@@ -289,6 +285,58 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
+class _IconBtnWithBadge extends StatelessWidget {
+  final IconData icon;
+  final int badge;
+  final VoidCallback onTap;
+  const _IconBtnWithBadge({
+    required this.icon,
+    required this.badge,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          if (badge > 0)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFD4A853),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  badge > 9 ? '9+' : '$badge',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Brand banner ──────────────────────────────────────────────────────────────
 class _BrandBanner extends StatelessWidget {
   const _BrandBanner();
@@ -310,7 +358,6 @@ class _BrandBanner extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // Decorative circles
             Positioned(
               right: -24,
               top: -24,
@@ -344,7 +391,6 @@ class _BrandBanner extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Brand label pill
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -384,7 +430,6 @@ class _BrandBanner extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Icon instead of emoji
                   Container(
                     width: 64,
                     height: 64,
@@ -402,6 +447,105 @@ class _BrandBanner extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bouquet builder banner ────────────────────────────────────────────────────
+class _BouquetBuilderBanner extends StatelessWidget {
+  const _BouquetBuilderBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CustomBouquetBuilderScreen()),
+        ),
+        child: Container(
+          height: 100,
+          clipBehavior: Clip.hardEdge,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7B2D8B), Color(0xFFB5548A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -20,
+                top: -20,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.06),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 16,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.local_florist_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Build Your Bouquet',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Pick your flowers, wrapping & message',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Colors.white54,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

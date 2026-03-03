@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/services/storage/secure_storage_service.dart';
 import 'package:sprint1_project/features/auth/presentation/view_model/auth_view_model.dart';
@@ -71,8 +71,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
-        transitionsBuilder: (_, animation, __, child) =>
+        pageBuilder: (_, _, ___) => page,
+        transitionsBuilder: (_, animation, _, child) =>
             FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 400),
       ),
@@ -106,7 +106,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFAD1457).withOpacity(0.15),
+                        color: const Color(0xFFAD1457).withValues(alpha: 0.15),
                         blurRadius: 30,
                         offset: const Offset(0, 10),
                       ),
@@ -139,7 +139,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   height: 28,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    color: const Color(0xFFAD1457).withOpacity(0.6),
+                    color: const Color(0xFFAD1457).withValues(alpha: 0.6),
                   ),
                 ),
               ],

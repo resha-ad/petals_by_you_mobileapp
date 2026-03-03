@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
+import 'package:sprint1_project/features/delivery/presentation/widgets/delivery_tracking_section_widget.dart';
 import 'package:sprint1_project/features/orders/domain/entities/orders_entity.dart';
 import 'package:sprint1_project/features/orders/presentation/view_model/orders_view_model.dart';
 
 const _kPrimary = Color(0xFF1B4332);
-const _kAccent = Color(0xFFD4A853);
 const _kBackground = Color(0xFFF9F6F0);
 const _kSurface = Color(0xFFFFFFFF);
 const _kTextDark = Color(0xFF1A1A1A);
@@ -87,6 +87,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 delegate: SliverChildListDelegate([
                   // ── Status card ─────────────────────────────────────────
                   _StatusCard(order: order, statusColor: statusColor),
+                  const SizedBox(height: 16),
+
+                  // ── Delivery tracking section ───────────────────────────
+                  DeliveryTrackingSection(orderId: order.id),
                   const SizedBox(height: 16),
 
                   // ── Items ───────────────────────────────────────────────
@@ -315,7 +319,7 @@ class _DetailHeader extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
+                color: Colors.white.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -369,7 +373,7 @@ class _StatusCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -381,7 +385,7 @@ class _StatusCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
+              color: statusColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -465,7 +469,7 @@ class _SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -509,7 +513,7 @@ class _OrderItemRow extends StatelessWidget {
                   ? Image.network(
                       ApiEndpoints.fullImageUrl(item.imageUrl!),
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
+                      errorBuilder: (_, _, ___) => _placeholder(),
                     )
                   : _placeholder(),
             ),

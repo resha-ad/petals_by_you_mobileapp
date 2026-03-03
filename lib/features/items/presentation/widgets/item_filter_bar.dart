@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const _kPrimary = Color(0xFF1B4332);
@@ -77,7 +77,7 @@ class _ItemFilterBarState extends State<ItemFilterBar> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: _categories.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               final cat = _categories[i];
               final isSelected = cat.value == _selectedCategory;
@@ -99,7 +99,7 @@ class _ItemFilterBarState extends State<ItemFilterBar> {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: _kPrimary.withOpacity(0.2),
+                              color: _kPrimary.withValues(alpha: 0.2),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),

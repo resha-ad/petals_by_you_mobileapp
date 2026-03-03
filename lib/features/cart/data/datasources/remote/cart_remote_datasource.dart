@@ -1,4 +1,4 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/api/api_client.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
@@ -32,8 +32,9 @@ class CartRemoteDatasource implements ICartRemoteDatasource {
       final response = await _apiClient.dio.get(ApiEndpoints.cart);
       if (response.data['success'] == true) {
         final data = response.data['data'];
-        if (data == null)
+        if (data == null) {
           return const CartApiModel(userId: '', items: [], total: 0);
+        }
         return CartApiModel.fromJson(data as Map<String, dynamic>);
       }
       throw Exception(response.data['message'] ?? 'Failed to fetch cart');

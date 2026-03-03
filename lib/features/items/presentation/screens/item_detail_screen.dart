@@ -1,4 +1,4 @@
-// lib/features/items/presentation/screens/item_detail_screen.dart
+﻿// lib/features/items/presentation/screens/item_detail_screen.dart
 //
 // Changes from original:
 //  - Favourite button now uses FavoriteButton widget (real toggle)
@@ -48,7 +48,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final success = await ref
         .read(cartViewModelProvider.notifier)
         .addProduct(itemId: widget.itemId, quantity: _quantity);
-    if (!mounted) return;
+    if (!mounted) { return; }
     setState(() => _addingToCart = false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -68,7 +68,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
-    if (success) ref.read(cartViewModelProvider.notifier).clearError();
+    if (success) { ref.read(cartViewModelProvider.notifier).clearError(); }
   }
 
   @override
@@ -135,7 +135,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                 itemBuilder: (_, i) => Image.network(
                                   ApiEndpoints.fullImageUrl(item.images[i]),
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
+                                  errorBuilder: (_, _, ___) =>
                                       _imageFallback(),
                                 ),
                               )
@@ -174,7 +174,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                   decoration: BoxDecoration(
                                     color: _selectedImageIndex == i
                                         ? _kAccent
-                                        : Colors.white.withOpacity(0.4),
+                                        : Colors.white.withValues(alpha: 0.4),
                                     borderRadius: BorderRadius.circular(3),
                                   ),
                                 ),
@@ -390,8 +390,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                     _QtyButton(
                                       icon: Icons.remove_rounded,
                                       onTap: () {
-                                        if (_quantity > 1)
-                                          setState(() => _quantity--);
+                                        if (_quantity > 1) { setState(() => _quantity--); }
                                       },
                                     ),
                                     Padding(
@@ -470,7 +469,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   color: _kSurface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, -4),
                     ),
@@ -512,7 +511,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             boxShadow: item.stock > 0
                                 ? [
                                     BoxShadow(
-                                      color: _kPrimary.withOpacity(0.3),
+                                      color: _kPrimary.withValues(alpha: 0.3),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
@@ -664,7 +663,7 @@ class _FloatBtn extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
