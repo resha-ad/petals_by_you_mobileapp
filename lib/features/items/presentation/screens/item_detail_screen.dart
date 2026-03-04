@@ -1,10 +1,5 @@
 ﻿// lib/features/items/presentation/screens/item_detail_screen.dart
-//
-// Changes from original:
-//  - Favourite button now uses FavoriteButton widget (real toggle)
-//  - "Add to Bag" actually calls CartViewModel.addProduct
-//  - Cart loading indicator shown while adding
-//
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,30 +40,49 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
   Future<void> _addToCart() async {
     setState(() => _addingToCart = true);
+
     final success = await ref
         .read(cartViewModelProvider.notifier)
         .addProduct(itemId: widget.itemId, quantity: _quantity);
-    if (!mounted) { return; }
+
+    if (!mounted) return;
     setState(() => _addingToCart = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Text(success ? '💐 ' : '⚠️ '),
-            Text(
-              success
-                  ? 'Added to cart!'
-                  : ref.read(cartViewModelProvider).errorMessage ??
-                        'Failed to add',
-            ),
-          ],
+
+    if (success) {
+      // Reset quantity to 1 after adding, so user doesn't accidentally add more when they return to the screen
+      setState(() => _quantity = 1);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('💐  Added to cart!'),
+          backgroundColor: _kPrimary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        backgroundColor: success ? _kPrimary : Colors.red.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-    if (success) { ref.read(cartViewModelProvider.notifier).clearError(); }
+      );
+      ref.read(cartViewModelProvider.notifier).clearError();
+    } else {
+      final errMsg =
+          ref.read(cartViewModelProvider).errorMessage ?? 'Failed to add';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Text('⚠️  '),
+              Expanded(child: Text(errMsg)),
+            ],
+          ),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      ref.read(cartViewModelProvider.notifier).clearError();
+    }
   }
 
   @override
@@ -135,8 +149,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                 itemBuilder: (_, i) => Image.network(
                                   ApiEndpoints.fullImageUrl(item.images[i]),
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, _, ___) =>
-                                      _imageFallback(),
+                                  errorBuilder: (_, _, ___) => _imageFallback(),
                                 ),
                               )
                             : _imageFallback(),
@@ -390,7 +403,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                     _QtyButton(
                                       icon: Icons.remove_rounded,
                                       onTap: () {
-                                        if (_quantity > 1) { setState(() => _quantity--); }
+                                        if (_quantity > 1) {
+                                          setState(() => _quantity--);
+                                        }
                                       },
                                     ),
                                     Padding(

@@ -191,49 +191,49 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                               ),
                             ),
                             const Spacer(),
-                            GestureDetector(
-                              onTap: _isFetchingLocation
-                                  ? null
-                                  : _useCurrentLocation,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE8F4EE),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: _isFetchingLocation
-                                    ? const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 1.5,
-                                          color: _kPrimary,
-                                        ),
-                                      )
-                                    : const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.my_location_rounded,
-                                            size: 14,
-                                            color: _kPrimary,
-                                          ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Use current location',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: _kPrimary,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ),
+                            //     GestureDetector(
+                            //       onTap: _isFetchingLocation
+                            //           ? null
+                            //           : _useCurrentLocation,
+                            //       child: Container(
+                            //         padding: const EdgeInsets.symmetric(
+                            //           horizontal: 10,
+                            //           vertical: 6,
+                            //         ),
+                            //         decoration: BoxDecoration(
+                            //           color: const Color(0xFFE8F4EE),
+                            //           borderRadius: BorderRadius.circular(8),
+                            //         ),
+                            //         child: _isFetchingLocation
+                            //             ? const SizedBox(
+                            //                 width: 14,
+                            //                 height: 14,
+                            //                 child: CircularProgressIndicator(
+                            //                   strokeWidth: 1.5,
+                            //                   color: _kPrimary,
+                            //                 ),
+                            //               )
+                            //             : const Row(
+                            //                 mainAxisSize: MainAxisSize.min,
+                            //                 children: [
+                            //                   Icon(
+                            //                     Icons.my_location_rounded,
+                            //                     size: 14,
+                            //                     color: _kPrimary,
+                            //                   ),
+                            //                   SizedBox(width: 4),
+                            //                   Text(
+                            //                     'Use current location',
+                            //                     style: TextStyle(
+                            //                       fontSize: 12,
+                            //                       color: _kPrimary,
+                            //                       fontWeight: FontWeight.w600,
+                            //                     ),
+                            //                   ),
+                            //                 ],
+                            //               ),
+                            //       ),
+                            //     ),
                           ],
                         ),
                         const SizedBox(height: 10),

@@ -41,6 +41,9 @@ dependencies:
   riverpod_annotation: ^3.0.3
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
+  sensors_plus: ^5.0.1
+  light_sensor: ^3.0.0
+  proximity_sensor: ^1.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -57,6 +60,7 @@ dependencies:
   mocktail: ^1.0.4
   geolocator: ^14.0.2
   geocoding: ^4.0.0
+  device_info_plus: ^12.3.0
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +74,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
   test_cov_console: ^0.2.2
 
 
@@ -107,6 +112,13 @@ flutter:
       - asset: assets/fonts/Poppins-SemiBold.ttf
         weight: 600
 
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"
 
   #   - family: Trajan Pro
   #     fonts:

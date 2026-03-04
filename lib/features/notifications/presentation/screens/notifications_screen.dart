@@ -1,13 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sprint1_project/app/themes/app_colors.dart';
 import 'package:sprint1_project/features/notifications/presentation/state/notification_state.dart';
 import 'package:sprint1_project/features/notifications/presentation/view_model/notification_view_model.dart';
 import 'package:sprint1_project/features/notifications/presentation/widgets/notification_widgets.dart';
 
 const _kPrimary = Color(0xFF1B4332);
-const _kBackground = Color(0xFFF9F6F0);
-const _kSurface = Color(0xFFFFFFFF);
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -37,16 +36,15 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: _kBackground,
+        backgroundColor: AppColors.background(context),
         body: RefreshIndicator(
           color: _kPrimary,
-          backgroundColor: _kSurface,
+          backgroundColor: AppColors.surface(context),
           onRefresh: () =>
               ref.read(notificationViewModelProvider.notifier).load(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // ── Header ───────────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: _NotificationsHeader(
                   unreadCount: state.unreadCount,
@@ -61,8 +59,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                       : null,
                 ),
               ),
-
-              // ── Loading ──────────────────────────────────────────────────
               if (state.status == NotificationStatus.loading && visible.isEmpty)
                 const SliverFillRemaining(
                   child: Center(
@@ -72,10 +68,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     ),
                   ),
                 )
-              // ── Empty state (from notifications_empty_state_widget.dart) ─
               else if (visible.isEmpty)
                 const SliverFillRemaining(child: NotificationsEmptyState())
-              // ── List (NotificationTile from notification_tile_widget.dart)
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
@@ -105,9 +99,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear All Notifications'),
-        content: const Text('Remove all notifications?'),
+        title: Text(
+          'Clear All Notifications',
+          style: TextStyle(color: AppColors.textPrimary(context)),
+        ),
+        content: Text(
+          'Remove all notifications?',
+          style: TextStyle(color: AppColors.textSecondary(context)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -129,7 +130,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 }
 
-// ── Header ────────────────────────────────────────────────────────────────────
 class _NotificationsHeader extends StatelessWidget {
   final int unreadCount;
   final VoidCallback onBack;

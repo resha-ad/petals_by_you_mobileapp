@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sprint1_project/app/themes/app_colors.dart';
 import 'package:sprint1_project/features/auth/presentation/view_model/auth_view_model.dart';
 import 'package:sprint1_project/features/bottom_screens/presentation/screens/search_screen.dart';
 import 'package:sprint1_project/features/custom_bouquet/presentation/screens/custom_bouquet_builder_screen.dart';
@@ -11,12 +12,9 @@ import 'package:sprint1_project/features/items/presentation/widgets/item_card_wi
 import 'package:sprint1_project/features/notifications/presentation/screens/notifications_screen.dart';
 import 'package:sprint1_project/features/notifications/presentation/view_model/notification_view_model.dart';
 
+// Brand colors — fixed regardless of theme
 const _kPrimary = Color(0xFF1B4332);
 const _kAccent = Color(0xFFD4A853);
-const _kBackground = Color(0xFFF9F6F0);
-const _kSurface = Color(0xFFFFFFFF);
-const _kTextDark = Color(0xFF1A1A1A);
-const _kTextLight = Color(0xFF9E9E9E);
 
 final homeItemsProvider = NotifierProvider<ItemViewModel, ItemState>(
   ItemViewModel.new,
@@ -63,15 +61,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final items = state.items;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: AppColors.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: _kBackground,
+        backgroundColor: AppColors.background(context),
         body: RefreshIndicator(
           color: _kPrimary,
-          backgroundColor: _kSurface,
+          backgroundColor: AppColors.surface(context),
           displacement: 60,
           onRefresh: () => ref.read(homeItemsProvider.notifier).loadItems(),
           child: FadeTransition(
@@ -102,7 +102,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           const SizedBox(height: 16),
                           Text(
                             'Loading blooms...',
-                            style: TextStyle(color: _kTextLight, fontSize: 14),
+                            style: TextStyle(
+                              color: AppColors.textHint(context),
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -118,18 +121,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   )
                 else ...[
                   ..._buildSection(
+                    context: context,
                     label: 'Featured',
                     icon: Icons.star_rounded,
                     items: items.where((i) => i.isFeatured).take(6).toList(),
                     isOffline: isOffline,
                   ),
                   ..._buildSection(
+                    context: context,
                     label: 'New Collection',
                     icon: Icons.fiber_new_rounded,
                     items: items.take(6).toList(),
                     isOffline: isOffline,
                   ),
                   ..._buildSection(
+                    context: context,
                     label: 'Arrangements',
                     icon: Icons.spa_rounded,
                     items: items
@@ -141,6 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     isOffline: isOffline,
                   ),
                   ..._buildSection(
+                    context: context,
                     label: 'Gift Sets',
                     icon: Icons.card_giftcard_rounded,
                     items: items
@@ -160,6 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   List<Widget> _buildSection({
+    required BuildContext context,
     required String label,
     required IconData icon,
     required List<ItemEntity> items,
@@ -247,8 +255,6 @@ class _Header extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _IconBtn(icon: Icons.shopping_bag_outlined, onTap: () {}),
-          const SizedBox(width: 8),
           _IconBtnWithBadge(
             icon: Icons.notifications_none_rounded,
             badge: unreadCount,
@@ -318,7 +324,7 @@ class _IconBtnWithBadge extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(3),
                 decoration: const BoxDecoration(
-                  color: Color(0xFFD4A853),
+                  color: _kAccent,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
@@ -568,18 +574,21 @@ class _SectionHeader extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: _kPrimary.withOpacity(0.08),
+              color: AppColors.iconContainer(
+                context,
+                const Color(0xFF1B4332).withOpacity(0.08),
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: _kPrimary, size: 17),
+            child: Icon(icon, color: const Color(0xFF1B4332), size: 17),
           ),
           const SizedBox(width: 10),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: _kTextDark,
+              color: AppColors.textPrimary(context),
               letterSpacing: -0.3,
             ),
           ),
@@ -600,9 +609,9 @@ class _OfflineBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(20, 14, 20, 0),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E7),
+        color: AppColors.offlineBg(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFD970), width: 1),
+        border: Border.all(color: AppColors.offlineBorder(context), width: 1),
       ),
       child: Row(
         children: [
@@ -612,12 +621,14 @@ class _OfflineBanner extends StatelessWidget {
             color: Color(0xFFB08800),
           ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
               'You\'re offline — showing cached data',
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF7A5E00),
+                color: AppColors.isDark(context)
+                    ? const Color(0xFFCCAA00)
+                    : const Color(0xFF7A5E00),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -628,7 +639,7 @@ class _OfflineBanner extends StatelessWidget {
               'Retry',
               style: TextStyle(
                 fontSize: 12,
-                color: _kPrimary,
+                color: Color(0xFF1B4332),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -655,7 +666,7 @@ class _ErrorState extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F4EE),
+              color: AppColors.iconContainer(context, const Color(0xFFE8F4EE)),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
@@ -665,19 +676,19 @@ class _ErrorState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "Couldn't load flowers",
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _kTextDark,
+              color: AppColors.textPrimary(context),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             message ?? 'Check your connection and try again',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13, color: _kTextLight),
+            style: TextStyle(fontSize: 13, color: AppColors.textHint(context)),
           ),
           const SizedBox(height: 20),
           GestureDetector(
@@ -685,7 +696,7 @@ class _ErrorState extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: _kPrimary,
+                color: const Color(0xFF1B4332),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(

@@ -2,10 +2,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/services/connectivity/network_info.dart';
 import 'package:sprint1_project/core/services/notifications/push_notification_service.dart';
+import 'package:sprint1_project/core/services/stock_override_service.dart';
 import 'package:sprint1_project/features/orders/domain/entities/orders_entity.dart';
 import 'package:sprint1_project/features/orders/domain/usecases/orders_usecases.dart';
 
-// ── State ─────────────────────────────────────────────────────────────────────
 enum OrdersStatus { initial, loading, loaded, error }
 
 class OrdersState extends Equatable {
@@ -60,7 +60,6 @@ class OrdersState extends Equatable {
   ];
 }
 
-// ── ViewModel ─────────────────────────────────────────────────────────────────
 final ordersViewModelProvider = NotifierProvider<OrdersViewModel, OrdersState>(
   OrdersViewModel.new,
 );
@@ -71,8 +70,8 @@ class OrdersViewModel extends Notifier<OrdersState> {
   late final PlaceOrderUsecase _placeOrder;
   late final CancelOrderUsecase _cancelOrder;
   late final INetworkInfo _networkInfo;
+  late final StockOverrideService _stockOverride; // ← ADD
 
-  /// Tracks the last-known status per order ID so we can detect transitions.
   final Map<String, String> _knownStatuses = {};
 
   @override
@@ -82,10 +81,10 @@ class OrdersViewModel extends Notifier<OrdersState> {
     _placeOrder = ref.read(placeOrderUsecaseProvider);
     _cancelOrder = ref.read(cancelOrderUsecaseProvider);
     _networkInfo = ref.read(networkInfoProvider);
+    _stockOverride = ref.read(stockOverrideServiceProvider); // ← ADD
     return const OrdersState();
   }
 
-  // ── Auto-fix: delivered orders are always shown as "paid" ─────────────────
   List<OrderEntity> _applyPaymentFix(List<OrderEntity> orders) {
     return orders.map((order) {
       if (order.status == OrderStatus.delivered &&
@@ -104,7 +103,6 @@ class OrdersViewModel extends Notifier<OrdersState> {
     return order;
   }
 
-  // ── Detect status transitions and fire push notifications ─────────────────
   void _checkStatusTransitions(List<OrderEntity> freshOrders) {
     for (final order in freshOrders) {
       final shortId =
@@ -115,36 +113,32 @@ class OrdersViewModel extends Notifier<OrdersState> {
       if (previous != null && previous != current) {
         String title = '';
         String body = '';
-
         switch (order.status) {
           case OrderStatus.confirmed:
-            title = '✅ Order Confirmed!';
+            title = 'Order Confirmed!';
             body =
-                'Your order $shortId has been confirmed and is being prepared.';
+                'Your order with order id$shortId has been confirmed and is being prepared.';
             break;
           case OrderStatus.preparing:
             title = '🌸 Your Bouquet is Being Made';
-            body =
-                'Our florists are handcrafting your order $shortId with love!';
+            body = 'Our florists are handcrafting your order with love!';
             break;
           case OrderStatus.outForDelivery:
             title = '🚚 Out for Delivery!';
-            body =
-                'Your order $shortId is on its way. Please be available to receive it.';
+            body = 'Your order with order id$shortId is on its way.';
             break;
           case OrderStatus.delivered:
             title = '🎉 Order Delivered!';
             body =
-                'Your order $shortId has been delivered. We hope you love it! 💐';
+                'Your order with order id$shortId has been delivered. We hope you love it! 💐';
             break;
           case OrderStatus.cancelled:
-            title = '❌ Order Cancelled';
-            body = 'Your order $shortId has been cancelled.';
+            title = 'Order Cancelled';
+            body = 'Your order with order id$shortId has been cancelled.';
             break;
           default:
             break;
         }
-
         if (title.isNotEmpty) {
           PushNotificationService.instance.showNotification(
             id: order.id.hashCode.abs() % 100000,
@@ -153,12 +147,10 @@ class OrdersViewModel extends Notifier<OrdersState> {
           );
         }
       }
-
       _knownStatuses[order.id] = current;
     }
   }
 
-  // ── loadOrders ────────────────────────────────────────────────────────────
   Future<void> loadOrders() async {
     state = state.copyWith(status: OrdersStatus.loading, clearError: true);
     final isOnline = await _networkInfo.isConnected;
@@ -180,7 +172,6 @@ class OrdersViewModel extends Notifier<OrdersState> {
     );
   }
 
-  // ── loadOrderById ─────────────────────────────────────────────────────────
   Future<void> loadOrderById(String id) async {
     state = state.copyWith(
       status: OrdersStatus.loading,
@@ -203,7 +194,7 @@ class OrdersViewModel extends Notifier<OrdersState> {
     );
   }
 
-  // ── placeOrder ────────────────────────────────────────────────────────────
+  // ── placeOrder — only this method changed ────────────────────────────────
   Future<OrderEntity?> placeOrder({
     required String paymentMethod,
     required Map<String, dynamic> deliveryDetails,
@@ -217,16 +208,23 @@ class OrdersViewModel extends Notifier<OrdersState> {
         notes: notes,
       ),
     );
+
     OrderEntity? placed;
     result.fold(
       (failure) => state = state.copyWith(
         status: OrdersStatus.error,
         errorMessage: failure.message,
       ),
-      (order) {
+      (order) async {
         placed = order;
-        // Seed the known status so we don't double-notify on next load
         _knownStatuses[order.id] = order.status.name;
+
+        // ── Record local stock deductions for every product item ──────────
+        for (final item in order.items) {
+          if (item.type == 'product') {
+            await _stockOverride.recordDeduction(item.refId, item.quantity);
+          }
+        }
 
         state = state.copyWith(
           status: OrdersStatus.loaded,
@@ -236,7 +234,6 @@ class OrdersViewModel extends Notifier<OrdersState> {
           clearError: true,
         );
 
-        // 🌸 "Order placed" notification
         final shortId =
             '#${order.id.substring(order.id.length > 6 ? order.id.length - 6 : 0)}';
         PushNotificationService.instance.showNotification(
@@ -250,7 +247,6 @@ class OrdersViewModel extends Notifier<OrdersState> {
     return placed;
   }
 
-  // ── cancelOrder ───────────────────────────────────────────────────────────
   Future<void> cancelOrder(String id, {String? reason}) async {
     state = state.copyWith(pendingIds: {...state.pendingIds, id});
     final result = await _cancelOrder(

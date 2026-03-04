@@ -222,10 +222,6 @@ class FavoriteItemCard extends ConsumerWidget {
                                   ],
                                 ),
                               ),
-                              if (item.stock == 0)
-                                _stockTag('Sold out', Colors.red)
-                              else if (item.stock <= 5)
-                                _stockTag('Only ${item.stock}', Colors.orange),
                             ],
                           ),
                   ],

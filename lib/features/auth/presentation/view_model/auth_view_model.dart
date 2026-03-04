@@ -167,4 +167,20 @@ class AuthViewModel extends Notifier<AuthState> {
   void clearError() {
     state = state.copyWith(status: AuthStatus.initial, errorMessage: null);
   }
+
+  // ─── Verify current password ───────────────────────────────────────────────
+  // Reuses the existing POST /login endpoint — no new backend endpoint needed.
+  // Returns true if the password matches, false if 401 (wrong password).
+  Future<bool> verifyCurrentPassword(String password) async {
+    final currentEmail = state.user?.email;
+    if (currentEmail == null) return false;
+    final result = await _loginUsecase(
+      LoginParams(email: currentEmail, password: password),
+    );
+    // isRight() = login succeeded = password is correct
+    return result.isRight();
+  }
+
+  // ─── Username availability ─────────────────────────────────────────────────
+  Future<bool> checkUsernameAvailability(String username) async => true;
 }
