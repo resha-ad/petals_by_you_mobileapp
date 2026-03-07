@@ -110,7 +110,6 @@ const _wrappings = [
   ),
 ];
 
-const _kPrimary = Color(0xFF1B4332);
 const _kBackground = Color(0xFFF9F6F0);
 const _kSurface = Color(0xFFFFFFFF);
 const _kTextDark = Color(0xFF1A1A1A);

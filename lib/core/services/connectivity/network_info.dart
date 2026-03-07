@@ -9,6 +9,9 @@ abstract interface class INetworkInfo {
 final networkInfoProvider = Provider<NetworkInfo>((ref) {
   return NetworkInfo(Connectivity());
 });
+// final networkInfoProvider = Provider<INetworkInfo>((ref) {
+//   return NetworkInfo(Connectivity());
+// });
 
 class NetworkInfo implements INetworkInfo {
   final Connectivity _connectivity;
