@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-/// Reusable image placeholder — shows a flower icon, or an asset image when
+/// Reusable image placeholder — shows a flower icon, or an asset image when offline.
 class OfflineImagePlaceholder extends StatelessWidget {
   final bool isOffline;
   const OfflineImagePlaceholder({super.key, required this.isOffline});
@@ -12,11 +12,11 @@ class OfflineImagePlaceholder extends StatelessWidget {
       child: Center(
         child: isOffline
             ? Image.asset(
-                'assets/images/placeholder_flower.png',
+                'assets/images/placeholderflower.png',
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.local_florist_outlined,
                   size: 40,
                   color: Color(0xFF52B788),

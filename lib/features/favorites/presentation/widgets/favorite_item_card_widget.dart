@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
 import 'package:sprint1_project/features/favorites/domain/entities/favorite_entity.dart';
@@ -46,7 +46,7 @@ class FavoriteItemCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -72,7 +72,7 @@ class FavoriteItemCard extends ConsumerWidget {
                           ? Image.network(
                               ApiEndpoints.fullImageUrl(item.primaryImage!),
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, _, ___) =>
                                   OfflineImagePlaceholder(isOffline: false),
                             )
                           : OfflineImagePlaceholder(isOffline: false),
@@ -121,7 +121,7 @@ class FavoriteItemCard extends ConsumerWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
+                                color: Colors.black.withValues(alpha: 0.1),
                                 blurRadius: 4,
                               ),
                             ],
@@ -151,7 +151,7 @@ class FavoriteItemCard extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
+                          color: Colors.black.withValues(alpha: 0.45),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(
@@ -222,10 +222,6 @@ class FavoriteItemCard extends ConsumerWidget {
                                   ],
                                 ),
                               ),
-                              if (item.stock == 0)
-                                _stockTag('Sold out', Colors.red)
-                              else if (item.stock <= 5)
-                                _stockTag('Only ${item.stock}', Colors.orange),
                             ],
                           ),
                   ],
@@ -241,7 +237,7 @@ class FavoriteItemCard extends ConsumerWidget {
   Widget _stockTag(String label, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(

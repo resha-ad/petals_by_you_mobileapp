@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sprint1_project/core/services/stock_override_service.dart';
 import 'package:sprint1_project/features/items/domain/usecases/get_item_by_id_usecase.dart';
 import 'package:sprint1_project/features/items/domain/usecases/get_items_usecase.dart';
 import 'package:sprint1_project/features/items/presentation/state/item_state.dart';
@@ -10,6 +11,7 @@ final itemViewModelProvider = NotifierProvider<ItemViewModel, ItemState>(
 class ItemViewModel extends Notifier<ItemState> {
   late final GetItemsUsecase _getItemsUsecase;
   late final GetItemByIdUsecase _getItemByIdUsecase;
+  late final StockOverrideService _stockOverride;
 
   static const int _pageSize = 10;
 
@@ -17,10 +19,10 @@ class ItemViewModel extends Notifier<ItemState> {
   ItemState build() {
     _getItemsUsecase = ref.read(getItemsUsecaseProvider);
     _getItemByIdUsecase = ref.read(getItemByIdUsecaseProvider);
+    _stockOverride = ref.read(stockOverrideServiceProvider);
     return const ItemState();
   }
 
-  // ── loadItems ─────────────────────────────────────────────────────────────
   Future<void> loadItems({
     String? category,
     String? search,
@@ -51,6 +53,8 @@ class ItemViewModel extends Notifier<ItemState> {
       ),
     );
 
+    await _stockOverride.load(); // ← ADD — ensure deductions are loaded
+
     result.fold(
       (failure) => state = state.copyWith(
         status: ItemStatus.error,
@@ -59,21 +63,20 @@ class ItemViewModel extends Notifier<ItemState> {
       ),
       (dataResult) => state = state.copyWith(
         status: ItemStatus.loaded,
-        items: dataResult.data,
+        items: _stockOverride.applyToList(
+          dataResult.data,
+        ), // ← CHANGE (was dataResult.data)
         currentPage: 1,
         hasMore: dataResult.data.length >= _pageSize,
-        // THE KEY FIX: isFromCache now comes from the actual DataResult
-        // so when offline it will be true, when online it will be false
         isFromCache: dataResult.fromCache,
         clearErrorMessage: true,
       ),
     );
   }
 
-  // ── loadMore ──────────────────────────────────────────────────────────────
   Future<void> loadMore() async {
     if (state.status == ItemStatus.loadingMore || !state.hasMore) return;
-    if (state.isFromCache) return; // can't paginate cached data
+    if (state.isFromCache) return;
 
     state = state.copyWith(status: ItemStatus.loadingMore);
     final nextPage = state.currentPage + 1;
@@ -99,7 +102,10 @@ class ItemViewModel extends Notifier<ItemState> {
         } else {
           state = state.copyWith(
             status: ItemStatus.loaded,
-            items: [...state.items, ...dataResult.data],
+            items: [
+              ...state.items,
+              ..._stockOverride.applyToList(dataResult.data),
+            ], // ← CHANGE
             currentPage: nextPage,
             hasMore: dataResult.data.length >= _pageSize,
             isFromCache: dataResult.fromCache,
@@ -110,12 +116,10 @@ class ItemViewModel extends Notifier<ItemState> {
     );
   }
 
-  // ── applyFilter ───────────────────────────────────────────────────────────
   Future<void> applyFilter({String? category, String? sort}) async {
     await loadItems(category: category, search: state.activeSearch, sort: sort);
   }
 
-  // ── search ────────────────────────────────────────────────────────────────
   Future<void> search(String query) async {
     await loadItems(
       search: query.isNotEmpty ? query : null,
@@ -124,16 +128,16 @@ class ItemViewModel extends Notifier<ItemState> {
     );
   }
 
-  // ── clearSearch ───────────────────────────────────────────────────────────
   void clearSearch() => state = const ItemState();
 
-  // ── getItemById ───────────────────────────────────────────────────────────
   Future<void> getItemById(String id) async {
     state = state.copyWith(
       status: ItemStatus.loading,
       clearSelectedItem: true,
       clearErrorMessage: true,
     );
+
+    await _stockOverride.load(); // ← ADD
 
     final result = await _getItemByIdUsecase(GetItemByIdParams(itemId: id));
 
@@ -144,7 +148,7 @@ class ItemViewModel extends Notifier<ItemState> {
       ),
       (dataResult) => state = state.copyWith(
         status: ItemStatus.loaded,
-        selectedItem: dataResult.data,
+        selectedItem: _stockOverride.applyToItem(dataResult.data), // ← CHANGE
         isFromCache: dataResult.fromCache,
       ),
     );

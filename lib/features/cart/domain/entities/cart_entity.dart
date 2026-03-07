@@ -24,10 +24,37 @@ class CartItemEntity extends Equatable {
 
   String get displayName {
     if (refItem != null) return refItem!.name;
-    final recipient = customDetails?['recipientName'];
-    return recipient != null
-        ? 'Custom Bouquet for $recipient'
-        : 'Custom Bouquet';
+    if (customDetails != null) {
+      final recipient = customDetails!['recipientName']?.toString() ?? '';
+      final flowers = customDetails!['flowers'] as List?;
+      final names =
+          flowers
+              ?.take(2)
+              .map((f) => f['name']?.toString() ?? '')
+              .where((n) => n.isNotEmpty)
+              .join(' & ') ??
+          '';
+      if (recipient.isNotEmpty) return 'Custom Bouquet for $recipient';
+      if (names.isNotEmpty) return 'Custom Bouquet ($names)';
+    }
+    return 'Custom Bouquet';
+  }
+
+  // Additional helper for cart display
+  String get customDescription {
+    if (type != 'custom' || customDetails == null) return '';
+    final flowers = customDetails!['flowers'] as List?;
+    final wrapping = customDetails!['wrapping'] as Map?;
+    final parts = <String>[];
+    if (flowers != null && flowers.isNotEmpty) {
+      final stems = flowers.fold<int>(
+        0,
+        (sum, f) => sum + ((f['count'] as num?)?.toInt() ?? 0),
+      );
+      parts.add('$stems stems');
+    }
+    if (wrapping != null) parts.add(wrapping['name']?.toString() ?? '');
+    return parts.join(' · ');
   }
 
   String? get displayImage => refItem?.primaryImage;

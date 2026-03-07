@@ -1,4 +1,4 @@
-// lib/features/items/presentation/widgets/item_card_widget.dart
+﻿// lib/features/items/presentation/widgets/item_card_widget.dart
 import 'package:flutter/material.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
 import 'package:sprint1_project/features/favorites/presentation/widgets/favorite_button_widget.dart';
@@ -9,6 +9,7 @@ import 'package:sprint1_project/features/items/presentation/screens/item_detail_
 const _kPrimary = Color(0xFF1B4332);
 const _kAccent = Color(0xFFD4A853);
 const _kTextDark = Color(0xFF1A1A1A);
+const _kTextMid = Color(0xFF5C5C5C);
 const _kTextLight = Color(0xFF9E9E9E);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ class ItemCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -95,7 +96,7 @@ class ItemCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.45),
+                          color: Colors.black.withValues(alpha: 0.45),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Icon(
@@ -202,7 +203,7 @@ class ItemCard extends StatelessWidget {
     return Image.network(
       ApiEndpoints.fullImageUrl(item.primaryImage!),
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _ImagePlaceholder(isOffline: false),
+      errorBuilder: (_, _, ___) => _ImagePlaceholder(isOffline: false),
     );
   }
 }
@@ -240,7 +241,7 @@ class ItemListTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -260,7 +261,7 @@ class ItemListTile extends StatelessWidget {
                     : Image.network(
                         ApiEndpoints.fullImageUrl(item.primaryImage!),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
+                        errorBuilder: (_, _, ___) =>
                             _ImagePlaceholder(isOffline: false),
                       ),
               ),
@@ -372,7 +373,7 @@ class _ImagePlaceholder extends StatelessWidget {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, _, ___) => const Icon(
                   Icons.local_florist_outlined,
                   size: 40,
                   color: Color(0xFF52B788),
@@ -438,7 +439,7 @@ class _StockTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

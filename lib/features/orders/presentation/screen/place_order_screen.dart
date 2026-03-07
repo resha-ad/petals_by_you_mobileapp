@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sprint1_project/core/services/location/location_service.dart';
 import 'package:sprint1_project/features/cart/domain/entities/cart_entity.dart';
+import 'package:sprint1_project/features/cart/presentation/screen/cart_screen.dart'
+    show kDeliveryFee;
 import 'package:sprint1_project/features/cart/presentation/view_model/cart_view_model.dart';
 import 'package:sprint1_project/features/orders/presentation/screen/orders_detail_screen.dart';
 import 'package:sprint1_project/features/orders/presentation/view_model/orders_view_model.dart';
@@ -31,8 +34,9 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
   final _zipCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
 
-  String _paymentMethod = 'cash_on_delivery';
+  final String _paymentMethod = 'cash_on_delivery';
   bool _isSubmitting = false;
+  bool _isFetchingLocation = false;
 
   @override
   void dispose() {
@@ -44,6 +48,30 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
     _zipCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _useCurrentLocation() async {
+    setState(() => _isFetchingLocation = true);
+    final result = await LocationService.getCurrentLocation();
+    if (!mounted) return;
+    setState(() => _isFetchingLocation = false);
+    if (result.isSuccess) {
+      _streetCtrl.text = result.street;
+      _cityCtrl.text = result.city;
+      _stateCtrl.text = result.state;
+      _zipCtrl.text = result.zip;
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.errorMessage ?? 'Could not get location'),
+          backgroundColor: Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _submit() async {
@@ -60,8 +88,12 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
             'address': {
               'street': _streetCtrl.text.trim(),
               'city': _cityCtrl.text.trim(),
-              'state': _stateCtrl.text.trim(),
-              'zip': _zipCtrl.text.trim(),
+              'state': _stateCtrl.text.trim().isNotEmpty
+                  ? _stateCtrl.text.trim()
+                  : null,
+              'zip': _zipCtrl.text.trim().isNotEmpty
+                  ? _zipCtrl.text.trim()
+                  : null,
               'country': 'Nepal',
             },
           },
@@ -71,13 +103,10 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
         );
 
     setState(() => _isSubmitting = false);
-
     if (!mounted) return;
 
     if (order != null) {
-      // Reload cart (it's been cleared by the backend)
       ref.read(cartViewModelProvider.notifier).loadCart();
-      // Navigate to order detail, removing checkout from stack
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => OrderDetailScreen(orderId: order.id)),
@@ -99,6 +128,8 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final grandTotal = widget.cart.total + kDeliveryFee;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -127,8 +158,7 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                           controller: _nameCtrl,
                           label: 'Recipient Name',
                           icon: Icons.person_outline,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
+                          validator: _requiredValidator('Recipient name'),
                         ),
                         const SizedBox(height: 12),
                         _Field(
@@ -136,16 +166,82 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                           label: 'Phone Number',
                           icon: Icons.phone_outlined,
                           keyboard: TextInputType.phone,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Phone number is required';
+                            }
+                            if (v.trim().length < 7) {
+                              return 'Enter a valid phone number';
+                            }
+                            return null;
+                          },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Text(
+                              'Address',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: _kTextMid,
+                              ),
+                            ),
+                            const Spacer(),
+                            //     GestureDetector(
+                            //       onTap: _isFetchingLocation
+                            //           ? null
+                            //           : _useCurrentLocation,
+                            //       child: Container(
+                            //         padding: const EdgeInsets.symmetric(
+                            //           horizontal: 10,
+                            //           vertical: 6,
+                            //         ),
+                            //         decoration: BoxDecoration(
+                            //           color: const Color(0xFFE8F4EE),
+                            //           borderRadius: BorderRadius.circular(8),
+                            //         ),
+                            //         child: _isFetchingLocation
+                            //             ? const SizedBox(
+                            //                 width: 14,
+                            //                 height: 14,
+                            //                 child: CircularProgressIndicator(
+                            //                   strokeWidth: 1.5,
+                            //                   color: _kPrimary,
+                            //                 ),
+                            //               )
+                            //             : const Row(
+                            //                 mainAxisSize: MainAxisSize.min,
+                            //                 children: [
+                            //                   Icon(
+                            //                     Icons.my_location_rounded,
+                            //                     size: 14,
+                            //                     color: _kPrimary,
+                            //                   ),
+                            //                   SizedBox(width: 4),
+                            //                   Text(
+                            //                     'Use current location',
+                            //                     style: TextStyle(
+                            //                       fontSize: 12,
+                            //                       color: _kPrimary,
+                            //                       fontWeight: FontWeight.w600,
+                            //                     ),
+                            //                   ),
+                            //                 ],
+                            //               ),
+                            //       ),
+                            //     ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         _Field(
                           controller: _streetCtrl,
                           label: 'Street Address',
                           icon: Icons.location_on_outlined,
-                          validator: (v) =>
-                              v == null || v.trim().isEmpty ? 'Required' : null,
+                          validator: _requiredValidator('Street address'),
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -156,9 +252,7 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                                 controller: _cityCtrl,
                                 label: 'City',
                                 icon: Icons.location_city_outlined,
-                                validator: (v) => v == null || v.trim().isEmpty
-                                    ? 'Required'
-                                    : null,
+                                validator: _requiredValidator('City'),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -168,6 +262,17 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                                 label: 'ZIP',
                                 icon: Icons.pin_outlined,
                                 keyboard: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                ],
+                                validator: (v) {
+                                  if (v != null &&
+                                      v.trim().isNotEmpty &&
+                                      v.trim().length < 4) {
+                                    return 'Invalid ZIP';
+                                  }
+                                  return null;
+                                },
                               ),
                             ),
                           ],
@@ -182,38 +287,67 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ── Payment method ─────────────────────────────────────
+                    // ── Payment method ────────────────────────────────────
                     _FormSection(
                       title: 'Payment Method',
                       children: [
-                        _PaymentOption(
-                          label: 'Cash on Delivery',
-                          description: 'Pay when your order arrives',
-                          icon: Icons.payments_outlined,
-                          value: 'cash_on_delivery',
-                          groupValue: _paymentMethod,
-                          onChanged: (v) => setState(() => _paymentMethod = v!),
-                        ),
-                        const SizedBox(height: 8),
-                        _PaymentOption(
-                          label: 'Online Payment',
-                          description: 'Pay securely online',
-                          icon: Icons.credit_card_outlined,
-                          value: 'online',
-                          groupValue: _paymentMethod,
-                          onChanged: (v) => setState(() => _paymentMethod = v!),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE8F4EE),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _kPrimary, width: 1.5),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.payments_outlined,
+                                color: _kPrimary,
+                                size: 22,
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Cash on Delivery',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _kPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Pay when your order arrives',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: _kTextLight,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.check_circle_rounded,
+                                color: _kPrimary,
+                                size: 20,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
 
-                    // ── Notes ──────────────────────────────────────────────
+                    // ── Notes ─────────────────────────────────────────────
                     _FormSection(
                       title: 'Notes (optional)',
                       children: [
                         TextFormField(
                           controller: _notesCtrl,
                           maxLines: 3,
+                          maxLength: 300,
                           style: const TextStyle(fontSize: 13),
                           decoration: InputDecoration(
                             hintText: 'Any special instructions...',
@@ -228,6 +362,10 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: const EdgeInsets.all(14),
+                            counterStyle: const TextStyle(
+                              fontSize: 11,
+                              color: _kTextLight,
+                            ),
                           ),
                         ),
                       ],
@@ -265,32 +403,26 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                           ),
                         ),
                         const Divider(color: Color(0xFFEEE8DE), height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Total',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: _kTextDark,
-                              ),
-                            ),
-                            Text(
-                              'Rs. ${widget.cart.total.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: _kPrimary,
-                              ),
-                            ),
-                          ],
+                        _SummaryRow(
+                          label: 'Subtotal',
+                          value: 'Rs. ${widget.cart.total.toStringAsFixed(0)}',
+                        ),
+                        const SizedBox(height: 6),
+                        _SummaryRow(
+                          label: 'Delivery',
+                          value: 'Rs. ${kDeliveryFee.toStringAsFixed(0)}',
+                        ),
+                        const Divider(color: Color(0xFFEEE8DE), height: 20),
+                        _SummaryRow(
+                          label: 'Total',
+                          value: 'Rs. ${grandTotal.toStringAsFixed(0)}',
+                          bold: true,
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
 
-                    // ── Place order button ─────────────────────────────────
+                    // ── Place order button ────────────────────────────────
                     GestureDetector(
                       onTap: _isSubmitting ? null : _submit,
                       child: Container(
@@ -316,19 +448,19 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Row(
+                              : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.check_circle_outline_rounded,
                                       color: Colors.white,
                                       size: 20,
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     Text(
-                                      'Place Order',
-                                      style: TextStyle(
-                                        fontSize: 16,
+                                      'Place Order • Rs. ${grandTotal.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                        fontSize: 15,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
@@ -347,6 +479,13 @@ class _PlaceOrderScreenState extends ConsumerState<PlaceOrderScreen> {
         ),
       ),
     );
+  }
+
+  String? Function(String?) _requiredValidator(String fieldName) {
+    return (v) {
+      if (v == null || v.trim().isEmpty) return '$fieldName is required';
+      return null;
+    };
   }
 }
 
@@ -454,12 +593,15 @@ class _Field extends StatelessWidget {
   final String label;
   final IconData icon;
   final TextInputType keyboard;
+  final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
+
   const _Field({
     required this.controller,
     required this.label,
     required this.icon,
     this.keyboard = TextInputType.text,
+    this.inputFormatters,
     this.validator,
   });
 
@@ -468,7 +610,9 @@ class _Field extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: keyboard,
+      inputFormatters: inputFormatters,
       validator: validator,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       style: const TextStyle(fontSize: 13, color: _kTextDark),
       decoration: InputDecoration(
         labelText: label,
@@ -488,6 +632,10 @@ class _Field extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
         ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 12,
@@ -497,71 +645,38 @@ class _Field extends StatelessWidget {
   }
 }
 
-class _PaymentOption extends StatelessWidget {
+class _SummaryRow extends StatelessWidget {
   final String label;
-  final String description;
-  final IconData icon;
   final String value;
-  final String groupValue;
-  final ValueChanged<String?> onChanged;
-  const _PaymentOption({
+  final bool bold;
+  const _SummaryRow({
     required this.label,
-    required this.description,
-    required this.icon,
     required this.value,
-    required this.groupValue,
-    required this.onChanged,
+    this.bold = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isSelected = value == groupValue;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE8F4EE) : const Color(0xFFF5F2EE),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? _kPrimary : Colors.transparent,
-            width: 1.5,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: bold ? 14 : 13,
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            color: bold ? _kTextDark : _kTextMid,
           ),
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: isSelected ? _kPrimary : _kTextLight, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? _kPrimary : _kTextDark,
-                    ),
-                  ),
-                  Text(
-                    description,
-                    style: const TextStyle(fontSize: 11, color: _kTextLight),
-                  ),
-                ],
-              ),
-            ),
-            Radio<String>(
-              value: value,
-              groupValue: groupValue,
-              onChanged: onChanged,
-              activeColor: _kPrimary,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ],
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: bold ? 15 : 13,
+            fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+            color: bold ? _kPrimary : _kTextMid,
+          ),
         ),
-      ),
+      ],
     );
   }
 }

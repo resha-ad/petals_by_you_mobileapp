@@ -94,8 +94,27 @@ class OrderEntity extends Equatable {
   });
 
   bool get isCancellable => status == OrderStatus.pending;
+
   bool get isActive =>
       status != OrderStatus.delivered && status != OrderStatus.cancelled;
+
+  /// Returns a copy of this entity with [paymentStatus] overridden.
+  /// Used by the view model to mark delivered orders as "paid" locally.
+  OrderEntity copyWithPaymentStatus(String newPaymentStatus) {
+    return OrderEntity(
+      id: id,
+      items: items,
+      totalAmount: totalAmount,
+      status: status,
+      paymentStatus: newPaymentStatus,
+      paymentMethod: paymentMethod,
+      notes: notes,
+      cancelReason: cancelReason,
+      cancelledAt: cancelledAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
 
   @override
   List<Object?> get props => [id, status, totalAmount];

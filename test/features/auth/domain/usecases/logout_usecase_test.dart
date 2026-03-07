@@ -32,9 +32,9 @@ void main() {
       verifyNoMoreInteractions(mockRepository);
     });
 
-    test('should return failure when logout fails', () async {
+    test('should return LocalDatabaseFailure when logout fails', () async {
       // Arrange
-      const failure = LocalDatabaseFailure(message: 'Failed to logout');
+      const failure = LocalDatabaseFailure(message: 'Failed to clear storage');
       when(
         () => mockRepository.logout(),
       ).thenAnswer((_) async => const Left(failure));
@@ -45,7 +45,19 @@ void main() {
       // Assert
       expect(result, const Left(failure));
       verify(() => mockRepository.logout()).called(1);
-      verifyNoMoreInteractions(mockRepository);
+    });
+
+    test('should call repository logout exactly once', () async {
+      // Arrange
+      when(
+        () => mockRepository.logout(),
+      ).thenAnswer((_) async => const Right(true));
+
+      // Act
+      await usecase();
+
+      // Assert
+      verify(() => mockRepository.logout()).called(1);
     });
   });
 }

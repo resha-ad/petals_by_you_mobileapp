@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/api/api_endpoints.dart';
@@ -8,12 +8,14 @@ import 'package:sprint1_project/features/cart/presentation/view_model/cart_view_
 import 'package:sprint1_project/features/orders/presentation/screen/place_order_screen.dart';
 
 const _kPrimary = Color(0xFF1B4332);
-const _kAccent = Color(0xFFD4A853);
 const _kBackground = Color(0xFFF9F6F0);
 const _kSurface = Color(0xFFFFFFFF);
 const _kTextDark = Color(0xFF1A1A1A);
 const _kTextMid = Color(0xFF5C5C5C);
 const _kTextLight = Color(0xFF9E9E9E);
+
+/// Flat delivery fee shown in the cart summary and checkout.
+const double kDeliveryFee = 150.0;
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -114,7 +116,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         bottomNavigationBar: state.isEmpty || isOffline
             ? null
             : _CheckoutBar(
-                total: state.total,
+                subtotal: state.total,
                 isLoading: state.status == CartStatus.loading,
                 onCheckout: () => Navigator.push(
                   context,
@@ -206,7 +208,7 @@ class _CartHeader extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text(
@@ -224,7 +226,7 @@ class _CartHeader extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -251,6 +253,9 @@ class _CartItemTile extends ConsumerWidget {
     final state = ref.watch(cartViewModelProvider);
     final isPending = state.isPending(item.refId);
 
+    // Determine stock limit for this item (fallback to large number if unknown)
+    final stockLimit = item.refItem?.stock ?? 9999;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
@@ -259,7 +264,7 @@ class _CartItemTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -273,11 +278,18 @@ class _CartItemTile extends ConsumerWidget {
             child: SizedBox(
               width: 72,
               height: 72,
-              child: item.displayImage != null
+              child: item.type == 'custom'
+                  ? Container(
+                      color: const Color(0xFFF7EDEB),
+                      child: const Center(
+                        child: Text('🌸', style: TextStyle(fontSize: 32)),
+                      ),
+                    )
+                  : item.displayImage != null
                   ? Image.network(
                       ApiEndpoints.fullImageUrl(item.displayImage!),
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _placeholder(),
+                      errorBuilder: (_, _, ___) => _placeholder(),
                     )
                   : _placeholder(),
             ),
@@ -300,6 +312,11 @@ class _CartItemTile extends ConsumerWidget {
                     height: 1.3,
                   ),
                 ),
+                if (item.type == 'custom' && item.customDescription.isNotEmpty)
+                  Text(
+                    item.customDescription,
+                    style: const TextStyle(fontSize: 10, color: _kTextLight),
+                  ),
                 const SizedBox(height: 4),
                 Text(
                   'Rs. ${item.unitPrice.toStringAsFixed(0)} each',
@@ -310,24 +327,18 @@ class _CartItemTile extends ConsumerWidget {
                   children: [
                     // Qty controls
                     if (!isOffline) ...[
+                      // Minus: disabled when quantity == 1 (use × to remove)
                       _QtyButton(
                         icon: Icons.remove_rounded,
-                        onTap: isPending
+                        // Disable minus at qty=1; user must tap × to remove
+                        onTap: (isPending || item.quantity <= 1)
                             ? null
-                            : () {
-                                if (item.quantity > 1) {
-                                  ref
-                                      .read(cartViewModelProvider.notifier)
-                                      .updateQuantity(
-                                        refId: item.refId,
-                                        quantity: item.quantity - 1,
-                                      );
-                                } else {
-                                  ref
-                                      .read(cartViewModelProvider.notifier)
-                                      .removeItem(item.refId);
-                                }
-                              },
+                            : () => ref
+                                  .read(cartViewModelProvider.notifier)
+                                  .updateQuantity(
+                                    refId: item.refId,
+                                    quantity: item.quantity - 1,
+                                  ),
                       ),
                       const SizedBox(width: 8),
                       isPending
@@ -348,9 +359,10 @@ class _CartItemTile extends ConsumerWidget {
                               ),
                             ),
                       const SizedBox(width: 8),
+                      // Plus: disabled when quantity == stock
                       _QtyButton(
                         icon: Icons.add_rounded,
-                        onTap: isPending
+                        onTap: (isPending || item.quantity >= stockLimit)
                             ? null
                             : () => ref
                                   .read(cartViewModelProvider.notifier)
@@ -384,7 +396,7 @@ class _CartItemTile extends ConsumerWidget {
             ),
           ),
 
-          // Remove button
+          // Remove (×) button — always available online regardless of quantity
           if (!isOffline)
             GestureDetector(
               onTap: isPending
@@ -431,7 +443,9 @@ class _QtyButton extends StatelessWidget {
         width: 28,
         height: 28,
         decoration: BoxDecoration(
-          color: const Color(0xFFE8F4EE),
+          color: onTap == null
+              ? const Color(0xFFF0EDE8)
+              : const Color(0xFFE8F4EE),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -451,6 +465,7 @@ class _OrderSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final grandTotal = cart.total + kDeliveryFee;
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
       padding: const EdgeInsets.all(18),
@@ -459,7 +474,7 @@ class _OrderSummary extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -482,11 +497,14 @@ class _OrderSummary extends StatelessWidget {
             value: 'Rs. ${cart.total.toStringAsFixed(0)}',
           ),
           const SizedBox(height: 8),
-          _SummaryRow(label: 'Delivery', value: 'Calculated at checkout'),
+          _SummaryRow(
+            label: 'Delivery',
+            value: 'Rs. ${kDeliveryFee.toStringAsFixed(0)}',
+          ),
           const Divider(height: 24, color: Color(0xFFEEE8DE)),
           _SummaryRow(
             label: 'Total',
-            value: 'Rs. ${cart.total.toStringAsFixed(0)}',
+            value: 'Rs. ${grandTotal.toStringAsFixed(0)}',
             bold: true,
           ),
         ],
@@ -533,17 +551,18 @@ class _SummaryRow extends StatelessWidget {
 
 // ── Checkout bar ──────────────────────────────────────────────────────────────
 class _CheckoutBar extends StatelessWidget {
-  final double total;
+  final double subtotal;
   final bool isLoading;
   final VoidCallback onCheckout;
   const _CheckoutBar({
-    required this.total,
+    required this.subtotal,
     required this.isLoading,
     required this.onCheckout,
   });
 
   @override
   Widget build(BuildContext context) {
+    final grandTotal = subtotal + kDeliveryFee;
     return Container(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -555,7 +574,7 @@ class _CheckoutBar extends StatelessWidget {
         color: _kSurface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -572,7 +591,7 @@ class _CheckoutBar extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: _kTextLight),
               ),
               Text(
-                'Rs. ${total.toStringAsFixed(0)}',
+                'Rs. ${grandTotal.toStringAsFixed(0)}',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
@@ -592,7 +611,7 @@ class _CheckoutBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: _kPrimary.withOpacity(0.3),
+                      color: _kPrimary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

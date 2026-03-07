@@ -5,8 +5,10 @@ import 'package:sprint1_project/core/constants/hive_table_constants.dart';
 import 'package:sprint1_project/features/auth/data/models/auth_hive_model.dart';
 import 'package:sprint1_project/features/cart/data/models/cart_hive_model.dart';
 import 'package:sprint1_project/features/cart/domain/entities/cart_entity.dart';
+import 'package:sprint1_project/features/delivery/data/models/delivery_hive_model.dart';
 import 'package:sprint1_project/features/favorites/data/models/favorites_hive_model.dart';
 import 'package:sprint1_project/features/items/data/models/item_hive_model.dart';
+import 'package:sprint1_project/features/notifications/data/models/notification_hive_model.dart';
 import 'package:sprint1_project/features/orders/data/models/order_hive_model.dart';
 import 'package:sprint1_project/features/orders/domain/entities/orders_entity.dart';
 
@@ -36,6 +38,12 @@ class HiveService {
     if (!Hive.isAdapterRegistered(HiveTableConstant.orderTypeId)) {
       Hive.registerAdapter(OrderHiveModelAdapter());
     }
+    if (!Hive.isAdapterRegistered(HiveTableConstant.deliveryTypeId)) {
+      Hive.registerAdapter(DeliveryHiveModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(HiveTableConstant.notificationTypeId)) {
+      Hive.registerAdapter(NotificationHiveModelAdapter());
+    }
   }
 
   Future<void> _openBoxes() async {
@@ -45,6 +53,10 @@ class HiveService {
     await Hive.openBox<FavoriteItemHiveModel>(HiveTableConstant.favoritesTable);
     await Hive.openBox<CartItemHiveModel>(HiveTableConstant.cartTable);
     await Hive.openBox<OrderHiveModel>(HiveTableConstant.orderTable);
+    await Hive.openBox<DeliveryHiveModel>(HiveTableConstant.deliveryTable);
+    await Hive.openBox<NotificationHiveModel>(
+      HiveTableConstant.notificationTable,
+    );
   }
 
   Future<void> close() async => await Hive.close();
@@ -108,7 +120,6 @@ class HiveService {
   Future<void> saveCart(List<CartItemHiveModel> items, double total) async {
     await _cartBox.clear();
     await _cartBox.putAll({for (final i in items) i.refId: i});
-    // Store total as a special entry's subtotal (hack-free: use app settings box)
     final settingsBox = Hive.box(HiveTableConstant.appSettingsTable);
     await settingsBox.put(_cartTotalKey, total);
   }
@@ -147,4 +158,26 @@ class HiveService {
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
   Future<void> clearOrders() async => await _orderBox.clear();
+
+  // ── Delivery ───────────────────────────────────────────────────────────────
+  // The delivery local datasource accesses its own box directly
+  // (keyed by orderId). These helpers are optional convenience wrappers.
+  Box<DeliveryHiveModel> get _deliveryBox =>
+      Hive.box<DeliveryHiveModel>(HiveTableConstant.deliveryTable);
+
+  Future<void> clearDeliveries() async => await _deliveryBox.clear();
 }
+
+// ── Notifications ───────────────────────────────────────────────────────────
+Box<NotificationHiveModel> get _notificationBox =>
+    Hive.box<NotificationHiveModel>(HiveTableConstant.notificationTable);
+
+Future<void> saveNotifications(List<NotificationHiveModel> models) async {
+  await _notificationBox.clear();
+  await _notificationBox.putAll({for (final m in models) m.id: m});
+}
+
+List<NotificationHiveModel> getCachedNotifications() =>
+    _notificationBox.values.toList();
+
+Future<void> clearNotifications() async => _notificationBox.clear();

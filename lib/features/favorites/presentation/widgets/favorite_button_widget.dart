@@ -1,17 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/core/services/connectivity/network_info.dart';
 import 'package:sprint1_project/features/favorites/presentation/view_model/favorites_view_model.dart';
 
-/// A self-contained heart icon button.
-/// Reads and writes to [favoritesViewModelProvider] automatically.
-/// Automatically disables itself when the device is offline.
-///
-/// Usage:
-/// ```dart
-/// FavoriteButton(refId: item.id)
-/// FavoriteButton(refId: item.id, size: 20, padding: EdgeInsets.all(8))
-/// ```
 class FavoriteButton extends ConsumerWidget {
   final String refId;
   final String type;
@@ -85,11 +76,11 @@ class FavoriteButton extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isFav
                     ? Colors.red.shade50
-                    : Colors.white.withOpacity(0.9),
+                    : Colors.white.withValues(alpha: 0.9),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                   ),
                 ],

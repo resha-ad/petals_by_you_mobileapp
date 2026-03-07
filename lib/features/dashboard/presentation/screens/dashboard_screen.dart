@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sprint1_project/features/bottom_screens/presentation/screens/favorites_screen.dart';
 import 'package:sprint1_project/features/bottom_screens/presentation/screens/home_screen.dart';
 import 'package:sprint1_project/features/bottom_screens/presentation/screens/profile_screen.dart';
-import 'package:sprint1_project/features/bottom_screens/presentation/screens/search_screen.dart';
 import 'package:sprint1_project/features/cart/presentation/screen/cart_screen.dart';
 import 'package:sprint1_project/features/cart/presentation/view_model/cart_view_model.dart';
+import 'package:sprint1_project/features/custom_bouquet/presentation/screens/custom_bouquet_builder_screen.dart';
 
 const _kPrimary = Color(0xFF1B4332);
 const _kBackground = Color(0xFFF9F6F0);
@@ -22,16 +22,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    SearchScreen(),
     FavoritesScreen(),
+    CustomBouquetBuilderScreen(),
     CartScreen(),
     ProfileScreen(),
   ];
 
   static const _navItems = [
     _NavItem(icon: Icons.home_rounded, label: 'Home'),
-    _NavItem(icon: Icons.search_rounded, label: 'Search'),
     _NavItem(icon: Icons.favorite_rounded, label: 'Wishlist'),
+    _NavItem(icon: Icons.local_florist_rounded, label: 'Bouquet'),
     _NavItem(icon: Icons.shopping_bag_rounded, label: 'Cart'),
     _NavItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
@@ -102,7 +102,7 @@ class _BottomNav extends StatelessWidget {
           final isSelected = i == selectedIndex;
           final item = items[i];
 
-          // Centre tab (Wishlist/index 2) — raised pill
+          // Centre tab — raised circle
           if (i == 2) {
             return GestureDetector(
               onTap: () => onTap(i),
@@ -132,7 +132,7 @@ class _BottomNav extends StatelessWidget {
             );
           }
 
-          // Cart tab (index 3) — show badge
+          // Cart tab — badge
           if (i == 3) {
             return GestureDetector(
               onTap: () => onTap(i),
@@ -206,6 +206,7 @@ class _BottomNav extends StatelessWidget {
             );
           }
 
+          // Default tab
           return GestureDetector(
             onTap: () => onTap(i),
             child: SizedBox(
